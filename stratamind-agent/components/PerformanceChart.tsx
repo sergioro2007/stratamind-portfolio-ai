@@ -81,6 +81,21 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     const strokeColor = isPositive ? '#10B981' : '#EF4444'; // green-500 : red-500
     const fillColor = showBenchmark ? 'url(#colorValue)' : (isPositive ? '#D1FAE5' : '#FEE2E2');
 
+    // Responsive detection
+    const [isPortrait, setIsPortrait] = React.useState(false);
+
+    React.useEffect(() => {
+        const checkOrientation = () => {
+            setIsPortrait(window.innerHeight > window.innerWidth);
+        };
+
+        // Initial check
+        checkOrientation();
+
+        window.addEventListener('resize', checkOrientation);
+        return () => window.removeEventListener('resize', checkOrientation);
+    }, []);
+
     const ranges: TimeRange[] = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
     return (
@@ -92,8 +107,8 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                         <button
                             onClick={() => onToggleBenchmark(!showBenchmark)}
                             className={`flex items-center px-2 py-1 text-xs rounded-md border ${showBenchmark
-                                    ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
-                                    : 'bg-slate-800 border-slate-600 text-slate-400'
+                                ? 'bg-amber-500/10 border-amber-500/50 text-amber-400'
+                                : 'bg-slate-800 border-slate-600 text-slate-400'
                                 }`}
                         >
                             <span className={`w-2 h-2 rounded-full mr-1 ${showBenchmark ? 'bg-amber-400' : 'bg-slate-500'}`}></span>
@@ -134,7 +149,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                                 tick={{ fontSize: 10, fill: '#64748b' }}
                                 axisLine={false}
                                 tickLine={false}
-                                minTickGap={30}
+                                minTickGap={isPortrait ? 50 : 30}
                                 dy={10}
                             />
                             <YAxis
@@ -144,7 +159,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                                 axisLine={false}
                                 tickLine={false}
                                 orientation="right"
-                                width={60}
+                                width={isPortrait ? 40 : 60}
                             />
                             <Tooltip
                                 contentStyle={{
