@@ -44,17 +44,17 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     const ranges: TimeRange[] = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
 
     return (
-        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700">
+        <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700 shadow-sm">
             <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Performance</h3>
-                <div className="flex space-x-1 bg-gray-100 dark:bg-gray-900 p-1 rounded-md">
+                <h3 className="text-lg font-semibold text-slate-200">Performance</h3>
+                <div className="flex space-x-1 bg-slate-900/50 p-1 rounded-lg">
                     {ranges.map(r => (
                         <button
                             key={r}
                             onClick={() => onTimeRangeChange(r)}
-                            className={`px-3 py-1 text-xs font-medium rounded-sm transition-colors ${timeRange === r
-                                    ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                                    : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white'
+                            className={`px-3 py-1 text-xs font-medium rounded-md transition-all ${timeRange === r
+                                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20'
+                                : 'text-slate-400 hover:text-indigo-400'
                                 }`}
                         >
                             {r}
@@ -69,23 +69,24 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                         <AreaChart data={history}>
                             <defs>
                                 <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor={strokeColor} stopOpacity={0.1} />
+                                    <stop offset="5%" stopColor={strokeColor} stopOpacity={0.2} />
                                     <stop offset="95%" stopColor={strokeColor} stopOpacity={0} />
                                 </linearGradient>
                             </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E5E7EB" />
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#334155" />
                             <XAxis
                                 dataKey="timestamp"
                                 tickFormatter={formatDate}
-                                tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                                tick={{ fontSize: 10, fill: '#64748b' }}
                                 axisLine={false}
                                 tickLine={false}
                                 minTickGap={30}
+                                dy={10}
                             />
                             <YAxis
                                 domain={['auto', 'auto']}
                                 tickFormatter={formatCurrency}
-                                tick={{ fontSize: 12, fill: '#9CA3AF' }}
+                                tick={{ fontSize: 10, fill: '#64748b' }}
                                 axisLine={false}
                                 tickLine={false}
                                 orientation="right"
@@ -93,13 +94,19 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                             />
                             <Tooltip
                                 contentStyle={{
-                                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                                    borderRadius: '0.5rem',
-                                    border: 'none',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                                    backgroundColor: '#1e293b',
+                                    borderRadius: '0.75rem',
+                                    border: '1px solid #334155',
+                                    padding: '12px',
+                                    boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)'
                                 }}
+                                itemStyle={{ color: '#e2e8f0' }}
+                                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '12px' }}
                                 labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'short', day: 'numeric' })}
-                                formatter={(value: number) => [formatCurrency(value), 'Value']}
+                                formatter={(value: number) => [
+                                    <span className="text-emerald-400 font-bold">{formatCurrency(value)}</span>,
+                                    <span className="text-slate-400">Value</span>
+                                ]}
                             />
                             <Area
                                 type="monotone"
@@ -112,7 +119,7 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
                         </AreaChart>
                     </ResponsiveContainer>
                 ) : (
-                    <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+                    <div className="h-full flex items-center justify-center text-slate-500 text-sm">
                         Not enough data to display chart
                     </div>
                 )}
