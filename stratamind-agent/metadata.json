@@ -1,0 +1,5 @@
+{
+  "name": "StrataMind Agent",
+  "description": "An intelligent, hierarchical portfolio management platform powered by Google Gemini. Features natural language portfolio construction, 'Pie' style grouping, and AI-driven rebalancing workflows.",
+  "requestFramePermissions": []
+}
