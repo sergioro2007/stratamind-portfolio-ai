@@ -10,6 +10,9 @@ import { generateId, buildStrategyFromAI } from './services/portfolioFactory';
 import { calculateEqualRebalance, calculateSetOneRebalance } from './utils/rebalanceHelpers';
 // Import the new modal component
 import { AccountSettingsModal } from './components/AccountSettingsModal';
+import { PerformanceChart } from './components/PerformanceChart';
+import { PerformanceStatsDisplay } from './components/PerformanceStats';
+import { PerformanceSnapshot, PerformanceStats, TimeRange } from './types';
 
 function App() {
     // -------------------------------------------------------------------------
@@ -36,6 +39,14 @@ function App() {
 
     // New State for consolidated settings
     const [editingAccountSettings, setEditingAccountSettings] = useState<{ instId: string, accId: string } | null>(null);
+
+    // -------------------------------------------------------------------------
+    // STATE: Performance Data
+    // -------------------------------------------------------------------------
+    const [performanceHistory, setPerformanceHistory] = useState<PerformanceSnapshot[]>([]);
+    const [performanceStats, setPerformanceStats] = useState<PerformanceStats | null>(null);
+    const [timeRange, setTimeRange] = useState<TimeRange>('1M');
+    const [isPerformanceLoading, setIsPerformanceLoading] = useState(false);
 
     // -------------------------------------------------------------------------
     // STATE: AI Chat
@@ -1138,6 +1149,46 @@ function App() {
 
                         <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
                             <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
+                                {/* Performance Section */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                    <div className="lg:col-span-2">
+                                        <PerformanceChart
+                                            history={performanceHistory}
+                                            timeRange={timeRange}
+                                            onTimeRangeChange={setTimeRange}
+                                            historyLoading={isPerformanceLoading}
+                                        />
+                                    </div>
+                                    <div>
+                                        {performanceStats && (
+                                            <PerformanceStatsDisplay
+                                                stats={performanceStats}
+                                                statsLoading={isPerformanceLoading}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Performance Section */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                                    <div className="lg:col-span-2">
+                                        <PerformanceChart
+                                            history={performanceHistory}
+                                            timeRange={timeRange}
+                                            onTimeRangeChange={setTimeRange}
+                                            historyLoading={isPerformanceLoading}
+                                        />
+                                    </div>
+                                    <div>
+                                        {performanceStats && (
+                                            <PerformanceStatsDisplay
+                                                stats={performanceStats}
+                                                statsLoading={isPerformanceLoading}
+                                            />
+                                        )}
+                                    </div>
+                                </div>
+
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
