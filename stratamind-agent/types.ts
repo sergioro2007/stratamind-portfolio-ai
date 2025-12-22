@@ -66,3 +66,29 @@ export interface MarketData {
     price: number;
     changePercent: number;
 }
+// Performance Tracking Types
+
+export interface PerformanceSnapshot {
+    id: string;
+    accountId: string;
+    timestamp: number;
+    totalValue: number;
+    cashBalance: number;
+    holdingsValue: number;
+    dayChange?: number;
+    dayChangePercent?: number;
+}
+
+export interface PerformanceStats {
+    current: number;
+    dayChange: number;
+    dayChangePercent: number;
+    weekChange: number;
+    weekChangePercent: number;
+    monthChange: number;
+    monthChangePercent: number;
+    allTimeHigh: number;
+    allTimeLow: number;
+}
+
+export type TimeRange = '1D' | '1W' | '1M' | '3M' | '1Y' | 'ALL';

@@ -39,3 +39,18 @@ CREATE TABLE IF NOT EXISTS portfolio_slices (
   FOREIGN KEY(account_id) REFERENCES accounts(id) ON DELETE CASCADE,
   FOREIGN KEY(parent_id) REFERENCES portfolio_slices(id) ON DELETE CASCADE
 );
+-- Performance tracking: snapshots of portfolio value over time
+CREATE TABLE IF NOT EXISTS performance_snapshots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  account_id TEXT NOT NULL,
+  timestamp INTEGER NOT NULL,
+  total_value REAL NOT NULL,
+  cash_balance REAL NOT NULL,
+  holdings_value REAL NOT NULL,
+  day_change REAL,
+  day_change_percent REAL,
+  FOREIGN KEY (account_id) REFERENCES accounts(id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_snapshots_account ON performance_snapshots(account_id);
+CREATE INDEX IF NOT EXISTS idx_snapshots_timestamp ON performance_snapshots(timestamp);

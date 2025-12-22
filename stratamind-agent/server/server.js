@@ -241,3 +241,102 @@ app.delete('/api/accounts/:id', (req, res) => {
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+// === Performance Tracking Endpoints ===
+
+// POST /api/performance/snapshot
+// Record a performance snapshot
+app.post('/api/performance/snapshot', (req, res) => {
+    const { accountId, totalValue, cashBalance, holdingsValue, dayChange, dayChangePercent } = req.body;
+    const id = uuidv4();
+    const timestamp = Date.now();
+    
+    const sql = `INSERT INTO performance_snapshots 
+        (id, account_id, timestamp, total_value, cash_balance, holdings_value, day_change, day_change_percent) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
+    
+    db.run(sql, [id, accountId, timestamp, totalValue, cashBalance, holdingsValue, dayChange || null, dayChangePercent || null], (err) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ id, timestamp });
+    });
+});
+
+// GET /api/performance/:accountId
+// Get performance history for an account
+app.get('/api/performance/:accountId', (req, res) => {
+    const { accountId } = req.params;
+    const { range } = req.query; // Optional time range filter
+    
+    const sql = `SELECT * FROM performance_snapshots WHERE account_id = ? ORDER BY timestamp ASC`;
+    
+    db.all(sql, [accountId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        // Map to camelCase
+        const snapshots = rows.map(r => ({
+            id: r.id,
+            accountId: r.account_id,
+            timestamp: r.timestamp,
+            totalValue: r.total_value,
+            cashBalance: r.cash_balance,
+            holdingsValue: r.holdings_value,
+            dayChange: r.day_change,
+            dayChangePercent: r.day_change_percent
+        }));
+        
+        res.json(snapshots);
+    });
+});
+
+// GET /api/performance/:accountId/stats
+// Get performance statistics for an account
+app.get('/api/performance/:accountId/stats', (req, res) => {
+    const { accountId } = req.params;
+    
+    const sql = `SELECT * FROM performance_snapshots WHERE account_id = ? ORDER BY timestamp ASC`;
+    
+    db.all(sql, [accountId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        
+        if (rows.length === 0) {
+            return res.json({
+                current: 0,
+                dayChange: 0,
+                dayChangePercent: 0,
+                weekChange: 0,
+                weekChangePercent: 0,
+                monthChange: 0,
+                monthChangePercent: 0,
+                allTimeHigh: 0,
+                allTimeLow: 0
+            });
+        }
+        
+        const now = Date.now();
+        const DAY_MS = 24 * 60 * 60 * 1000;
+        const WEEK_MS = 7 * DAY_MS;
+        const MONTH_MS = 30 * DAY_MS;
+        
+        const current = rows[rows.length - 1].total_value;
+       const dayAgo = rows.find(r => r.timestamp >= now - DAY_MS);
+        const weekAgo = rows.find(r => r.timestamp >= now - WEEK_MS);
+        const monthAgo = rows.find(r => r.timestamp >= now - MONTH_MS);
+        
+        const allTimeHigh = Math.max(...rows.map(r => r.total_value));
+        const allTimeLow = Math.min(...rows.map(r => r.total_value));
+        
+        const stats = {
+            current,
+            dayChange: dayAgo ? current - dayAgo.total_value : 0,
+            dayChangePercent: dayAgo && dayAgo.total_value > 0 ? ((current - dayAgo.total_value) / dayAgo.total_value) * 100 : 0,
+            weekChange: weekAgo ? current - weekAgo.total_value : 0,
+            weekChangePercent: weekAgo && weekAgo.total_value > 0 ? ((current - weekAgo.total_value) / weekAgo.total_value) * 100 : 0,
+            monthChange: monthAgo ? current - monthAgo.total_value : 0,
+            monthChangePercent: monthAgo && monthAgo.total_value > 0 ? ((current - monthAgo.total_value) / monthAgo.total_value) * 100 : 0,
+            allTimeHigh,
+            allTimeLow
+        };
+        
+        res.json(stats);
+    });
+});
