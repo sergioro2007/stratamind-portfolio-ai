@@ -14,6 +14,40 @@ import { PerformanceChart } from './components/PerformanceChart';
 import { PerformanceStatsDisplay } from './components/PerformanceStats';
 import { PerformanceSnapshot, PerformanceStats, TimeRange } from './types';
 
+// --- MOCK DATA FOR VISUALIZATION ---
+const MOCK_HISTORY: PerformanceSnapshot[] = Array.from({ length: 30 }).map((_, i) => {
+    const baseValue = 100000;
+    const volatility = 0.02;
+    const date = new Date();
+    date.setDate(date.getDate() - (29 - i));
+
+    // Random walk
+    const value = baseValue * (1 + (Math.sin(i * 0.5) * 0.05) + (Math.random() * volatility - volatility / 2));
+
+    return {
+        id: `mock-${i}`,
+        timestamp: date.getTime(),
+        accountId: 'mock-acc',
+        totalValue: value,
+        cashBalance: value * 0.1,
+        holdingsValue: value * 0.9,
+        dayChange: 0,
+        dayChangePercent: 0
+    };
+});
+
+const MOCK_STATS: PerformanceStats = {
+    current: 112500,
+    dayChange: 1250,
+    dayChangePercent: 1.12,
+    weekChange: 3500,
+    weekChangePercent: 3.2,
+    monthChange: 12500,
+    monthChangePercent: 12.5,
+    allTimeHigh: 115000,
+    allTimeLow: 95000
+};
+
 function App() {
     // -------------------------------------------------------------------------
     // STATE: Data Model
@@ -1150,39 +1184,19 @@ function App() {
                         <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
                             <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
                                 {/* Performance Section */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                                    <div className="lg:col-span-2">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                                    <div className="md:col-span-2">
                                         <PerformanceChart
-                                            history={performanceHistory}
+                                            history={performanceHistory.length > 0 ? performanceHistory : MOCK_HISTORY}
                                             timeRange={timeRange}
                                             onTimeRangeChange={setTimeRange}
                                             historyLoading={isPerformanceLoading}
                                         />
                                     </div>
-                                    <div>
-                                        {performanceStats && (
+                                    <div className="h-full">
+                                        {(performanceStats || MOCK_STATS) && (
                                             <PerformanceStatsDisplay
-                                                stats={performanceStats}
-                                                statsLoading={isPerformanceLoading}
-                                            />
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Performance Section */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                                    <div className="lg:col-span-2">
-                                        <PerformanceChart
-                                            history={performanceHistory}
-                                            timeRange={timeRange}
-                                            onTimeRangeChange={setTimeRange}
-                                            historyLoading={isPerformanceLoading}
-                                        />
-                                    </div>
-                                    <div>
-                                        {performanceStats && (
-                                            <PerformanceStatsDisplay
-                                                stats={performanceStats}
+                                                stats={performanceStats || MOCK_STATS}
                                                 statsLoading={isPerformanceLoading}
                                             />
                                         )}

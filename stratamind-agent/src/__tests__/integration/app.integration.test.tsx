@@ -6,6 +6,20 @@ import { db } from '../../../services/database';
 import { SliceType } from '../../../types';
 import * as marketData from '../../../services/marketData';
 
+
+// Mock Recharts to avoid Element.getComputedTextLength issues in JSDOM
+vi.mock('recharts', async () => {
+    return {
+        ResponsiveContainer: ({ children }: any) => <div className="recharts-responsive-container">{children}</div>,
+        AreaChart: ({ children }: any) => <div className="recharts-area-chart"><svg>{children}</svg></div>,
+        Area: () => <div className="recharts-area" />,
+        XAxis: () => <div className="recharts-x-axis" />,
+        YAxis: () => <div className="recharts-y-axis" />,
+        CartesianGrid: () => <div className="recharts-cartesian-grid" />,
+        Tooltip: () => <div className="recharts-tooltip" />,
+    };
+});
+
 // Mock Database
 vi.mock('../../../services/database', () => {
     const load = () => {

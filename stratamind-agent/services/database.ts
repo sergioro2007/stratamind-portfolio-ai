@@ -133,5 +133,29 @@ export const db = {
             });
         }
         return db.load();
+    },
+
+    // --- Performance Tracking Methods ---
+
+    recordPerformanceSnapshot: async (snapshot: Omit<import('../types').PerformanceSnapshot, 'id'>): Promise<void> => {
+        await fetch(`${API_BASE}/performance/snapshot`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(snapshot)
+        });
+    },
+
+    getPerformanceHistory: async (accountId: string, timeRange?: string): Promise<import('../types').PerformanceSnapshot[]> => {
+        const url = new URL(`${API_BASE}/performance/${accountId}`);
+        if (timeRange) {
+            url.searchParams.append('range', timeRange);
+        }
+        const response = await fetch(url.toString());
+        return handleResponse(response);
+    },
+
+    getPerformanceStats: async (accountId: string): Promise<import('../types').PerformanceStats> => {
+        const response = await fetch(`${API_BASE}/performance/${accountId}/stats`);
+        return handleResponse(response);
     }
 };
