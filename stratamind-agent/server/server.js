@@ -9,6 +9,21 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
+// Initialize DB Table if not exists
+db.serialize(() => {
+    db.run(`CREATE TABLE IF NOT EXISTS performance_snapshots (
+        id TEXT PRIMARY KEY,
+        account_id TEXT NOT NULL,
+        timestamp INTEGER NOT NULL,
+        total_value REAL,
+        cash_balance REAL,
+        holdings_value REAL,
+        day_change REAL,
+        day_change_percent REAL
+    )`);
+    db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_account_time ON performance_snapshots(account_id, timestamp)`);
+});
+
 // --- ROUTES ---
 
 // GET /api/portfolio
@@ -238,9 +253,16 @@ app.delete('/api/accounts/:id', (req, res) => {
     });
 });
 
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
 });
+
+server.on('error', (e) => {
+    console.error('Server error:', e);
+});
+
+// Prevent process exit (debugging)
+setInterval(() => { }, 10000);
 
 // === Performance Tracking Endpoints ===
 
@@ -250,11 +272,11 @@ app.post('/api/performance/snapshot', (req, res) => {
     const { accountId, totalValue, cashBalance, holdingsValue, dayChange, dayChangePercent } = req.body;
     const id = uuidv4();
     const timestamp = Date.now();
-    
+
     const sql = `INSERT INTO performance_snapshots 
         (id, account_id, timestamp, total_value, cash_balance, holdings_value, day_change, day_change_percent) 
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
-    
+
     db.run(sql, [id, accountId, timestamp, totalValue, cashBalance, holdingsValue, dayChange || null, dayChangePercent || null], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ id, timestamp });
@@ -266,12 +288,12 @@ app.post('/api/performance/snapshot', (req, res) => {
 app.get('/api/performance/:accountId', (req, res) => {
     const { accountId } = req.params;
     const { range } = req.query; // Optional time range filter
-    
+
     const sql = `SELECT * FROM performance_snapshots WHERE account_id = ? ORDER BY timestamp ASC`;
-    
+
     db.all(sql, [accountId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         // Map to camelCase
         const snapshots = rows.map(r => ({
             id: r.id,
@@ -283,7 +305,7 @@ app.get('/api/performance/:accountId', (req, res) => {
             dayChange: r.day_change,
             dayChangePercent: r.day_change_percent
         }));
-        
+
         res.json(snapshots);
     });
 });
@@ -292,12 +314,12 @@ app.get('/api/performance/:accountId', (req, res) => {
 // Get performance statistics for an account
 app.get('/api/performance/:accountId/stats', (req, res) => {
     const { accountId } = req.params;
-    
+
     const sql = `SELECT * FROM performance_snapshots WHERE account_id = ? ORDER BY timestamp ASC`;
-    
+
     db.all(sql, [accountId], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
-        
+
         if (rows.length === 0) {
             return res.json({
                 current: 0,
@@ -311,20 +333,20 @@ app.get('/api/performance/:accountId/stats', (req, res) => {
                 allTimeLow: 0
             });
         }
-        
+
         const now = Date.now();
         const DAY_MS = 24 * 60 * 60 * 1000;
         const WEEK_MS = 7 * DAY_MS;
         const MONTH_MS = 30 * DAY_MS;
-        
+
         const current = rows[rows.length - 1].total_value;
-       const dayAgo = rows.find(r => r.timestamp >= now - DAY_MS);
+        const dayAgo = rows.find(r => r.timestamp >= now - DAY_MS);
         const weekAgo = rows.find(r => r.timestamp >= now - WEEK_MS);
         const monthAgo = rows.find(r => r.timestamp >= now - MONTH_MS);
-        
+
         const allTimeHigh = Math.max(...rows.map(r => r.total_value));
         const allTimeLow = Math.min(...rows.map(r => r.total_value));
-        
+
         const stats = {
             current,
             dayChange: dayAgo ? current - dayAgo.total_value : 0,
@@ -336,7 +358,7 @@ app.get('/api/performance/:accountId/stats', (req, res) => {
             allTimeHigh,
             allTimeLow
         };
-        
+
         res.json(stats);
     });
 });

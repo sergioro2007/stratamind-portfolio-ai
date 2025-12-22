@@ -63,6 +63,11 @@ vi.mock('recharts', () => ({
     ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
     Tooltip: () => <div data-testid="tooltip" />,
     Legend: () => <div data-testid="legend" />,
+    AreaChart: ({ children }: any) => <div className="recharts-area-chart"><svg>{children}</svg></div>,
+    Area: () => <div className="recharts-area" />,
+    XAxis: () => <div className="recharts-x-axis" />,
+    YAxis: () => <div className="recharts-y-axis" />,
+    CartesianGrid: () => <div className="recharts-cartesian-grid" />,
 }));
 
 beforeEach(() => {

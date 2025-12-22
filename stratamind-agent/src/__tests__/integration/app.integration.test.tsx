@@ -17,6 +17,10 @@ vi.mock('recharts', async () => {
         YAxis: () => <div className="recharts-y-axis" />,
         CartesianGrid: () => <div className="recharts-cartesian-grid" />,
         Tooltip: () => <div className="recharts-tooltip" />,
+        PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
+        Pie: ({ children }: any) => <div data-testid="pie">{children}</div>,
+        Cell: () => <div data-testid="cell" />,
+        Legend: () => <div data-testid="legend" />,
     };
 });
 
@@ -146,14 +150,7 @@ vi.mock('../../../services/geminiService', () => ({
 }));
 
 // Mock Recharts
-vi.mock('recharts', () => ({
-    PieChart: ({ children }: any) => <div data-testid="pie-chart">{children}</div>,
-    Pie: ({ children }: any) => <div data-testid="pie">{children}</div>,
-    Cell: () => <div data-testid="cell" />,
-    ResponsiveContainer: ({ children }: any) => <div data-testid="responsive-container">{children}</div>,
-    Tooltip: () => <div data-testid="tooltip" />,
-    Legend: () => <div data-testid="legend" />,
-}));
+
 
 // Helper function to seed test data for tests requiring active account
 const seedTestData = () => {

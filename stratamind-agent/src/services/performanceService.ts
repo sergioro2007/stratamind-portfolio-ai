@@ -46,3 +46,37 @@ export function filterByTimeRange(
     const cutoff = now - ranges[range];
     return snapshots.filter(s => s.timestamp >= cutoff);
 }
+
+/**
+ * Merge benchmark data with portfolio history for comparison
+ */
+export const mergeBenchmarkData = (
+    portfolioHistory: PerformanceSnapshot[],
+    benchmarkData: { t: number, c: number }[]
+): (PerformanceSnapshot & { portfolioReturn: number; benchmarkReturn: number })[] => {
+    if (portfolioHistory.length === 0) return [];
+
+    const startValue = portfolioHistory[0].totalValue;
+    const startTimestamp = portfolioHistory[0].timestamp;
+
+    // Find closest benchmark start to normalize
+    const startBenchmark = benchmarkData.find(b => b.t >= startTimestamp) || benchmarkData[0];
+    const startBenchmarkValue = startBenchmark ? startBenchmark.c : 1;
+
+    return portfolioHistory.map(snap => {
+        // Find corresponding benchmark point (last known close <= snap.timestamp)
+        let benchPoint = benchmarkData.filter(b => b.t <= snap.timestamp).pop();
+        if (!benchPoint && benchmarkData.length > 0) benchPoint = benchmarkData[0];
+
+        const benchmarkVal = benchPoint ? benchPoint.c : startBenchmarkValue;
+
+        const portfolioReturn = calculateChangePercent(snap.totalValue, startValue);
+        const benchmarkReturn = calculateChangePercent(benchmarkVal, startBenchmarkValue);
+
+        return {
+            ...snap,
+            portfolioReturn,
+            benchmarkReturn
+        };
+    });
+};

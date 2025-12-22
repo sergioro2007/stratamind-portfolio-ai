@@ -202,3 +202,65 @@ export const searchSymbols = async (query: string): Promise<SearchResult[]> => {
         return [];
     }
 };
+
+/**
+ * Historical Data Interface
+ */
+export interface HistoricalDataPoint {
+    time: number;
+    close: number;
+}
+
+const historyCache = new Map<string, { data: HistoricalDataPoint[], timestamp: number }>();
+
+/**
+ * Fetch historical data for a symbol (Daily)
+ */
+export const fetchHistoricalData = async (symbol: string): Promise<HistoricalDataPoint[]> => {
+    // Check cache (TTL 1 hour for history)
+    const cached = historyCache.get(symbol);
+    if (cached && Date.now() - cached.timestamp < 3600000) {
+        return cached.data;
+    }
+
+    const url = `${API_BASE_URL}?function=TIME_SERIES_DAILY&symbol=${symbol}&apikey=${ALPHA_VANTAGE_KEY}`;
+
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch history');
+
+        const data = await response.json();
+        if (data['Error Message'] || data['Note']) throw new Error(data['Error Message'] || 'API Rate Limit');
+
+        const series = data['Time Series (Daily)'];
+        if (!series) throw new Error('No Time Series data');
+
+        const points: HistoricalDataPoint[] = Object.entries(series).map(([dateStr, values]: [string, any]) => ({
+            time: new Date(dateStr).getTime(),
+            close: parseFloat(values['4. close'])
+        })).sort((a, b) => a.time - b.time);
+
+        historyCache.set(symbol, { data: points, timestamp: Date.now() });
+        return points;
+    } catch (error) {
+        console.warn("Historical fetch error, falling back to mock data:", error);
+
+        // Mock Data Fallback for Development (SPY-like)
+        if (symbol === 'SPY') {
+            const now = Date.now();
+            const points: HistoricalDataPoint[] = [];
+            let price = 450;
+            for (let i = 365; i >= 0; i--) {
+                const date = new Date(now - i * 86400000);
+                // Random walk with drift
+                price = price * (1 + (Math.random() * 0.02 - 0.009));
+                points.push({
+                    time: date.getTime(),
+                    close: price
+                });
+            }
+            return points;
+        }
+        return [];
+    }
+};

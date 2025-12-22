@@ -13,28 +13,62 @@ import { AccountSettingsModal } from './components/AccountSettingsModal';
 import { PerformanceChart } from './components/PerformanceChart';
 import { PerformanceStatsDisplay } from './components/PerformanceStats';
 import { PerformanceSnapshot, PerformanceStats, TimeRange } from './types';
+import { fetchHistoricalData } from './services/marketData';
+import { filterByTimeRange } from './src/services/performanceService';
 
 // --- MOCK DATA FOR VISUALIZATION ---
-const MOCK_HISTORY: PerformanceSnapshot[] = Array.from({ length: 30 }).map((_, i) => {
+// --- MOCK DATA FOR VISUALIZATION ---
+const MOCK_HISTORY: PerformanceSnapshot[] = (() => {
+    const history: PerformanceSnapshot[] = [];
     const baseValue = 100000;
     const volatility = 0.02;
-    const date = new Date();
-    date.setDate(date.getDate() - (29 - i));
+    const now = Date.now();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+    const HOUR_MS = 60 * 60 * 1000;
 
-    // Random walk
-    const value = baseValue * (1 + (Math.sin(i * 0.5) * 0.05) + (Math.random() * volatility - volatility / 2));
+    // 1. Generate Daily Data for past 30 days (excluding today)
+    for (let i = 29; i > 0; i--) {
+        const time = now - (i * DAY_MS);
+        const progress = (30 - i) / 30; // 0 to 1
+        // Random walk trend
+        const value = baseValue * (1 + (Math.sin(progress * Math.PI) * 0.1) + (Math.random() * volatility - volatility / 2));
 
-    return {
-        id: `mock-${i}`,
-        timestamp: date.getTime(),
-        accountId: 'mock-acc',
-        totalValue: value,
-        cashBalance: value * 0.1,
-        holdingsValue: value * 0.9,
-        dayChange: 0,
-        dayChangePercent: 0
-    };
-});
+        history.push({
+            id: `mock-day-${i}`,
+            timestamp: time,
+            accountId: 'mock-acc',
+            totalValue: value,
+            cashBalance: value * 0.1,
+            holdingsValue: value * 0.9,
+            dayChange: 0,
+            dayChangePercent: 0
+        });
+    }
+
+    // 2. Generate Hourly Data for the last 24 hours (Intraday)
+    // Start from the last daily value or base
+    let lastValue = history.length > 0 ? history[history.length - 1].totalValue : baseValue;
+
+    for (let i = 24; i >= 0; i--) {
+        const time = now - (i * HOUR_MS);
+        // Micro-movements
+        const change = lastValue * ((Math.random() - 0.5) * 0.005);
+        lastValue += change;
+
+        history.push({
+            id: `mock-hour-${i}`,
+            timestamp: time,
+            accountId: 'mock-acc',
+            totalValue: lastValue,
+            cashBalance: lastValue * 0.1,
+            holdingsValue: lastValue * 0.9,
+            dayChange: change, // approximation
+            dayChangePercent: (change / lastValue) * 100
+        });
+    }
+
+    return history.sort((a, b) => a.timestamp - b.timestamp);
+})();
 
 const MOCK_STATS: PerformanceStats = {
     current: 112500,
@@ -78,6 +112,9 @@ function App() {
     // STATE: Performance Data
     // -------------------------------------------------------------------------
     const [performanceHistory, setPerformanceHistory] = useState<PerformanceSnapshot[]>([]);
+    const [fullHistory, setFullHistory] = useState<PerformanceSnapshot[]>([]); // Store full history
+    const [benchmarkHistory, setBenchmarkHistory] = useState<{ t: number, c: number }[]>([]); // SPY data
+    const [showBenchmark, setShowBenchmark] = useState(false);
     const [performanceStats, setPerformanceStats] = useState<PerformanceStats | null>(null);
     const [timeRange, setTimeRange] = useState<TimeRange>('1M');
     const [isPerformanceLoading, setIsPerformanceLoading] = useState(false);
@@ -105,9 +142,29 @@ function App() {
                 if (loaded.length > 0) {
                     setActiveInstitutionId(loaded[0].id);
                     if (loaded[0].accounts.length > 0) {
-                        setActiveAccountId(loaded[0].accounts[0].id);
-                        if (loaded[0].accounts[0].strategies.length > 0) {
-                            setSelectedStrategyId(loaded[0].accounts[0].strategies[0].id);
+                        const firstAcc = loaded[0].accounts[0];
+                        setActiveAccountId(firstAcc.id);
+                        if (firstAcc.strategies.length > 0) {
+                            setSelectedStrategyId(firstAcc.strategies[0].id);
+                        }
+
+                        // Check for hourly snapshot on load
+                        try {
+                            const lastSnapshot = await db.getPerformanceHistory(firstAcc.id).then(h => h[h.length - 1]);
+                            const now = Date.now();
+                            if (!lastSnapshot || now - lastSnapshot.timestamp > 3600000) { // 1 hour
+                                await db.recordPerformanceSnapshot({
+                                    accountId: firstAcc.id,
+                                    timestamp: now,
+                                    totalValue: firstAcc.totalValue,
+                                    cashBalance: firstAcc.cashBalance,
+                                    holdingsValue: firstAcc.totalValue - firstAcc.cashBalance,
+                                    dayChange: 0,
+                                    dayChangePercent: 0
+                                });
+                            }
+                        } catch (e) {
+                            console.error("Snapshot check failed", e);
                         }
                     }
                 }
@@ -126,6 +183,71 @@ function App() {
         initData();
         initChat();
     }, []);
+
+    // -------------------------------------------------------------------------
+    // EFFECT: Performance Data Fetching
+    // -------------------------------------------------------------------------
+    useEffect(() => {
+        const loadPerformance = async () => {
+            if (!activeAccountId) return;
+
+            setIsPerformanceLoading(true);
+            try {
+                // 1. Fetch Stats
+                const stats = await db.getPerformanceStats(activeAccountId);
+                setPerformanceStats(stats);
+
+                // 2. Fetch Full History
+                // Note: db.getPerformanceHistory ignores timeRange for now to get all
+                const history = await db.getPerformanceHistory(activeAccountId);
+                const validHistory = history.map(h => ({
+                    ...h,
+                    totalValue: Number(h.totalValue),
+                    cashBalance: Number(h.cashBalance),
+                    holdingsValue: Number(h.holdingsValue),
+                    timestamp: Number(h.timestamp)
+                })).sort((a, b) => a.timestamp - b.timestamp);
+
+                if (validHistory && validHistory.length > 0) {
+                    setFullHistory(validHistory);
+                } else {
+                    setFullHistory(MOCK_HISTORY);
+                }
+
+                // 3. Fetch Benchmark (SPY) if not loaded
+                if (benchmarkHistory.length === 0) {
+                    try {
+                        const spyData = await fetchHistoricalData('SPY');
+                        const mappedSpy = spyData.map(d => ({ t: d.time, c: d.close }));
+                        setBenchmarkHistory(mappedSpy);
+                    } catch (e) {
+                        console.error("Failed to fetch SPY data", e);
+                    }
+                }
+
+            } catch (err) {
+                console.error("Failed to load performance data, using mock data", err);
+                setFullHistory(MOCK_HISTORY);
+                setPerformanceStats(MOCK_STATS);
+            } finally {
+                setIsPerformanceLoading(false);
+            }
+        };
+
+        loadPerformance();
+    }, [activeAccountId]);
+
+    // -------------------------------------------------------------------------
+    // EFFECT: Filter History by Range
+    // -------------------------------------------------------------------------
+    useEffect(() => {
+        if (fullHistory.length > 0) {
+            const filtered = filterByTimeRange(fullHistory, timeRange);
+            setPerformanceHistory(filtered);
+        } else {
+            setPerformanceHistory([]);
+        }
+    }, [fullHistory, timeRange]);
 
     // -------------------------------------------------------------------------
     // DERIVED STATE (Active Context)
@@ -710,6 +832,34 @@ function App() {
         if (!activeInstitution || !activeAccount) return;
         const updated = await db.updateAccountDetails(activeInstitution.id, activeAccount.id, updates);
         setInstitutions(updated);
+
+        // Record snapshot on significant updates (value/holdings change implicit in rebalance/add ticker)
+        // In a real app, we'd check if value actually changed, but here we assume these actions warrant a snapshot
+        try {
+            const updatedAcc = updated.find(i => i.id === activeInstitution.id)?.accounts.find(a => a.id === activeAccount.id);
+            if (updatedAcc) {
+                await db.recordPerformanceSnapshot({
+                    accountId: updatedAcc.id,
+                    timestamp: Date.now(),
+                    totalValue: updatedAcc.totalValue,
+                    cashBalance: updatedAcc.cashBalance,
+                    holdingsValue: updatedAcc.totalValue - updatedAcc.cashBalance,
+                    dayChange: 0,
+                    dayChangePercent: 0
+                });
+                // Refresh local history immediately to show point on chart
+                const newHistory = await db.getPerformanceHistory(updatedAcc.id);
+                setFullHistory(newHistory.map(h => ({
+                    ...h,
+                    totalValue: Number(h.totalValue),
+                    cashBalance: Number(h.cashBalance),
+                    holdingsValue: Number(h.holdingsValue),
+                    timestamp: Number(h.timestamp)
+                })).sort((a, b) => a.timestamp - b.timestamp));
+            }
+        } catch (e) {
+            console.error("Failed to record snapshot", e);
+        }
     };
 
     // -------------------------------------------------------------------------
@@ -1191,6 +1341,9 @@ function App() {
                                             timeRange={timeRange}
                                             onTimeRangeChange={setTimeRange}
                                             historyLoading={isPerformanceLoading}
+                                            benchmarkHistory={benchmarkHistory}
+                                            showBenchmark={showBenchmark}
+                                            onToggleBenchmark={setShowBenchmark}
                                         />
                                     </div>
                                     <div className="h-full">
