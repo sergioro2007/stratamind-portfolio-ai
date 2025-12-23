@@ -6,7 +6,9 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const DB_PATH = path.resolve(__dirname, 'database.sqlite');
+const DB_PATH = process.env.NODE_ENV === 'test'
+    ? ':memory:'
+    : path.resolve(__dirname, 'database.sqlite');
 const SCHEMA_PATH = path.resolve(__dirname, 'schema.sql');
 
 const sqliteVerbose = sqlite3.verbose();

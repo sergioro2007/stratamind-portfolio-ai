@@ -219,7 +219,7 @@ function App() {
 
         initData();
         initChat();
-    }, []);
+    }, [isLoggedIn]);
 
     // -------------------------------------------------------------------------
     // EFFECT: Performance Data Fetching

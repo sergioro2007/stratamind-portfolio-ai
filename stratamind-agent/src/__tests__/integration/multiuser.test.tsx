@@ -124,7 +124,7 @@ describe('Multiuser Data Isolation', () => {
                 'http://localhost:3001/api/portfolio',
                 expect.objectContaining({
                     headers: expect.objectContaining({
-                        'x-user-id': 'test@example.com'
+                        'x-user-id': 'user-123'
                     })
                 })
             );
