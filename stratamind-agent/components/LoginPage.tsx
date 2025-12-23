@@ -100,7 +100,9 @@ export default function LoginPage({ onLoginSuccess }: LoginPageProps) {
                                     borderRadius: '8px',
                                     outline: 'none',
                                     transition: 'border-color 0.2s',
-                                    boxSizing: 'border-box'
+                                    boxSizing: 'border-box',
+                                    color: '#1a202c',  // Dark text color for visibility
+                                    backgroundColor: '#ffffff'  // White background
                                 }}
                                 onFocus={(e) => e.target.style.borderColor = '#667eea'}
                                 onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
