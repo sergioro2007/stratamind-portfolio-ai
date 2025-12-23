@@ -1403,6 +1403,7 @@ function App() {
                             onClick={() => setChatOpen(!isChatOpen)}
                             className={`p-2 rounded-lg transition-colors xl:hidden ${isChatOpen ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
                             title="Toggle Chat"
+                            data-testid="chat-toggle-button"
                         >
                             <MessageSquare className="w-5 h-5" />
                         </button>
@@ -1411,7 +1412,7 @@ function App() {
                             className={`p-2 rounded-lg transition-colors ${activeAccount ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-700 cursor-not-allowed'}`}
                             title="Account Settings"
                             disabled={!activeAccount}
-                            data-testid="account-settings-button"
+                            data-testid="header-account-settings-button"
                         >
                             <Settings className="w-5 h-5" />
                         </button>
@@ -1509,7 +1510,11 @@ function App() {
                             {/* Mobile Header for Chat */}
                             <div className="xl:hidden flex items-center justify-between p-4 border-b border-slate-800">
                                 <h3 className="font-bold text-white">AI Assistant</h3>
-                                <button onClick={() => setChatOpen(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full">
+                                <button
+                                    onClick={() => setChatOpen(false)}
+                                    className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full"
+                                    data-testid="close-mobile-chat-button"
+                                >
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>

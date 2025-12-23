@@ -341,7 +341,7 @@ describe('Integration Tests - Complete User Workflows', () => {
 
             // Open settings
             const header = screen.getByRole('banner');
-            const settingsBtn = await within(header).findByTestId('account-settings-button');
+            const settingsBtn = await within(header).findByTestId('header-account-settings-button');
             await user.click(settingsBtn);
 
             // Delete Strategy 1 in modal
@@ -841,7 +841,8 @@ describe('Integration Tests - Complete User Workflows', () => {
             await waitFor(() => {
                 const visualizer = screen.getByTestId('portfolio-visualizer');
                 expect(within(visualizer).queryByText('AAPL')).not.toBeInTheDocument();
-                expect(within(visualizer).getByText('MSFT')).toBeInTheDocument();
+                // MSFT should be present (appears twice: name and symbol)
+                expect(within(visualizer).getAllByText('MSFT').length).toBeGreaterThan(0);
             }, { timeout: 4000 });
 
             // Verify database state

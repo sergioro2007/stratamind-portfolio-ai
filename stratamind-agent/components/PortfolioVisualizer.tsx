@@ -383,13 +383,22 @@ const PortfolioVisualizer: React.FC<Props> = ({
                         </>
                     )}
                     {currentView.type === SliceType.GROUP && (
-                        <button
-                            onClick={() => setShowManageSlicesModal(true)}
-                            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
-                            title="Manage Portfolio"
-                        >
-                            <Settings className="w-3 h-3" /> Manage
-                        </button>
+                        <>
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="p-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
+                                title="Add New Slice"
+                            >
+                                <Plus className="w-3 h-3" /> Add Slice
+                            </button>
+                            <button
+                                onClick={() => setShowManageSlicesModal(true)}
+                                className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
+                                title="Manage Portfolio"
+                            >
+                                <Settings className="w-3 h-3" /> Manage
+                            </button>
+                        </>
                     )}
                 </div>
             </div>
