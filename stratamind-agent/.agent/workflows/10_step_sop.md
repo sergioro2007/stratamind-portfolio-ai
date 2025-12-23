@@ -1,10 +1,10 @@
 ---
-description: Execute the strict 10-step Antigravity SOP loop for a new task (Feature/Fix).
+description: Execute the strict 10-step Antigravity SOP loop for a new task (Feature/Fix)
 ---
 
-# 10-Step Antigravity SOP Loop (v2.0)
+# 10-Step Antigravity SOP Loop (v2.1)
 
-This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" protocol.
+This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" protocol with **mandatory coverage verification**.
 
 ## Step 1: Branch & Context (MANDATORY)
 1. Ask the user for the `ticket-slug` or `feature-name`.
@@ -21,7 +21,12 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    ```bash
    npm run verify
    ```
-2. If this fails, **STOP**. The baseline is broken. Fix it before proceeding.
+2. **Run baseline coverage check**:
+   ```bash
+   npm run test:coverage
+   ```
+3. Record baseline coverage percentage (especially for files you'll modify).
+4. If verification fails, **STOP**. The baseline is broken. Fix it before proceeding.
 
 ## Step 3: Planning (Agent A)
 1. Creates `implementation_plan.md` (or updates it).
@@ -29,6 +34,7 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - **Invariants**: 5-10 bullets of what must NOT change.
    - **Allowed Files**: Explicit list of files to edit.
    - **Test Strategy**: Choose Characterization OR TDD (see Step 4).
+   - **Coverage Target**: Minimum coverage % for new/modified files (default: 50% overall, 70% for critical files).
    - **Rollback Plan**.
 3. Ask User for approval of the plan.
 
@@ -66,10 +72,38 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
 
 ## Step 6: Test New Behavior (Agent C)
 1. Add new tests or update existing ones for the new feature.
-2. Verify test coverage: aim for >= 80% of new code paths.
+2. **Coverage Requirements**:
+   - Run `npm run test:coverage`
+   - Verify >= 50% overall project coverage (MANDATORY)
+   - Verify >= 70% coverage for critical files (App.tsx, services, utils)
+   - New code should have >= 80% coverage
 3. Run `npm run verify`.
 
-## Step 7: Regression & Performance Audit (Agent D)
+## Step 7: Coverage Verification (MANDATORY)
+**Critical**: This step cannot be skipped.
+
+1. Run coverage report:
+   ```bash
+   npm run test:coverage
+   ```
+
+2. **Verify coverage thresholds**:
+   - ✅ Overall coverage >= 50%
+   - ✅ Modified files coverage >= baseline (no regression)
+   - ✅ New files coverage >= 70%
+   - ✅ Critical files (services, utils) >= 70%
+
+3. **If coverage drops below threshold**:
+   - Add targeted unit/integration tests
+   - Focus on untested code paths
+   - Repeat until thresholds met
+
+4. **Document coverage in walkthrough**:
+   - Before: X%
+   - After: Y%
+   - Delta: +Z%
+
+## Step 8: Regression & Performance Audit (Agent D)
 1. Review the changes made.
 2. Check for unintended side effects.
 3. Verify that Invariants from Step 3 are preserved.
@@ -78,11 +112,12 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - Unnecessary re-renders?
    - Memory leaks?
 
-## Step 8: Stabilize
+## Step 9: Stabilize
 1. If `npm run verify` failed in Step 6, fix the code (preferred) or tests (if behavior change was planned).
 2. Repeat until Green.
+3. **Ensure all coverage thresholds are met**.
 
-## Step 9: Commit
+## Step 10: Commit
 1. Stage and commit the changes with descriptive messages.
    ```bash
    git add .
@@ -90,13 +125,47 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    ```
 2. Make atomic commits (one logical change per commit).
 
-## Step 10: Proof Artifact
+## Step 11: Proof Artifact
 1. Update `walkthrough.md` or create a new verification artifact.
 2. Embed the output of `npm run verify`.
-3. List explicit "What Changed" and "What Didn't Change" (Invariants).
-4. **For UI changes**: Include screenshots or recordings.
-5. **For API changes**: Include example requests/responses.
-6. **For performance changes**: Include before/after metrics.
+3. **Embed coverage report summary** (before/after comparison).
+4. List explicit "What Changed" and "What Didn't Change" (Invariants).
+5. **For UI changes**: Include screenshots or recordings.
+6. **For API changes**: Include example requests/responses.
+7. **For performance changes**: Include before/after metrics.
+8. **For coverage changes**: Include coverage % improvement.
+
+## Step 12: Push & Cleanup
+1. Push the requested changes to GitHub:
+   ```bash
+   git push origin feat/<feature-name>
+   ```
+2. Request final approval from the user.
+3. If approved, delete the local feature branch:
+   ```bash
+   git switch main
+   git branch -D feat/<feature-name>
+   ```
 
 ---
-**Done**. Feature is ready for review/merge.
+
+## Coverage Quality Gates
+
+**MANDATORY thresholds** (feature cannot proceed without meeting these):
+
+| Metric | Threshold | Action if Below |
+|--------|-----------|-----------------|
+| Overall Coverage | >= 50% | Block merge, add tests |
+| Critical Files | >= 70% | Block merge, add tests |
+| New Code | >= 80% | Block merge, add tests |
+| Coverage Delta | >= 0% | No regression allowed |
+
+**Critical Files Include:**
+- `App.tsx`
+- `services/**/*.ts`
+- `utils/**/*.ts`
+- `components/**/*.tsx` (business logic)
+
+---
+
+**Done**. Feature is ready for review/merge with verified coverage.

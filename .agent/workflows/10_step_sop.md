@@ -135,6 +135,18 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
 7. **For performance changes**: Include before/after metrics.
 8. **For coverage changes**: Include coverage % improvement.
 
+## Step 12: Push & Cleanup
+1. Push the requested changes to GitHub:
+   ```bash
+   git push origin feat/<feature-name>
+   ```
+2. Request final approval from the user.
+3. If approved, delete the local feature branch:
+   ```bash
+   git switch main
+   git branch -D feat/<feature-name>
+   ```
+
 ---
 
 ## Coverage Quality Gates
