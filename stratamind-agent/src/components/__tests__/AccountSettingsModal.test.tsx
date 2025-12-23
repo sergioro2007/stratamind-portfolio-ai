@@ -145,4 +145,72 @@ describe('AccountSettingsModal', () => {
         fireEvent.change(screen.getByLabelText(/Cash Balance/i), { target: { value: '-5' } });
         expect(screen.getByRole('button', { name: /Save Changes/i })).toBeDisabled();
     });
+
+    // NEW TESTS: Account without strategies (TDD for bug fix)
+    describe('Account without strategies', () => {
+        const emptyAccount = {
+            id: 'acc-empty',
+            institutionId: 'inst-1',
+            name: 'Brokerage',
+            type: 'Brokerage',
+            totalValue: 0,
+            cashBalance: 0,
+            strategies: []
+        };
+
+        it('should enable save button when account has no strategies', () => {
+            render(<AccountSettingsModal account={emptyAccount} onSave={mockOnSave} onClose={mockOnClose} />);
+
+            const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+            expect(saveButton).not.toBeDisabled();
+        });
+
+        it('should allow renaming account without strategies', () => {
+            render(<AccountSettingsModal account={emptyAccount} onSave={mockOnSave} onClose={mockOnClose} />);
+
+            const nameInput = screen.getByLabelText(/Account Name/i);
+            fireEvent.change(nameInput, { target: { value: 'Individual TOD' } });
+
+            const saveButton = screen.getByRole('button', { name: /Save Changes/i });
+            expect(saveButton).not.toBeDisabled();
+
+            fireEvent.click(saveButton);
+
+            expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
+                name: 'Individual TOD',
+                strategies: []
+            }));
+        });
+
+        it('should allow updating total value without strategies', () => {
+            render(<AccountSettingsModal account={emptyAccount} onSave={mockOnSave} onClose={mockOnClose} />);
+
+            fireEvent.change(screen.getByLabelText(/Total Value/i), { target: { value: '5000' } });
+            fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+            expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
+                totalValue: 5000,
+                strategies: []
+            }));
+        });
+
+        it('should allow updating cash balance without strategies', () => {
+            render(<AccountSettingsModal account={emptyAccount} onSave={mockOnSave} onClose={mockOnClose} />);
+
+            fireEvent.change(screen.getByLabelText(/Cash Balance/i), { target: { value: '2500' } });
+            fireEvent.click(screen.getByRole('button', { name: /Save Changes/i }));
+
+            expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
+                cashBalance: 2500,
+                strategies: []
+            }));
+        });
+
+        it('should show "No strategies" message when empty', () => {
+            render(<AccountSettingsModal account={emptyAccount} onSave={mockOnSave} onClose={mockOnClose} />);
+
+            expect(screen.getByText(/No strategies found/i)).toBeInTheDocument();
+            expect(screen.getByText(/Ask AI to create one/i)).toBeInTheDocument();
+        });
+    });
 });

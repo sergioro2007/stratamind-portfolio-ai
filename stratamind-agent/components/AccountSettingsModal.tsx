@@ -21,7 +21,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
         return strategies.reduce((sum, s) => sum + (s.targetAllocation || 0), 0);
     }, [strategies]);
 
-    const isValid = totalAllocation === 100;
+    const isValid = strategies.length === 0 || totalAllocation === 100;
     const isValueValid = !isNaN(parseFloat(totalValue)) && parseFloat(totalValue) >= 0;
     const isCashValid = !isNaN(parseFloat(cashBalance)) && parseFloat(cashBalance) >= 0;
 
