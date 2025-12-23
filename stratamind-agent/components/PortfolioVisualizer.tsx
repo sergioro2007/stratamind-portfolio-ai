@@ -74,6 +74,9 @@ const PortfolioVisualizer: React.FC<Props> = ({
     const [validatingTicker, setValidatingTicker] = useState(false);
     const [tickerError, setTickerError] = useState<string | null>(null);
 
+    // Allocation validation state
+    const [allocationError, setAllocationError] = useState<string | null>(null);
+
     // Internal price state for auto-fetch
     const [internalPrices, setInternalPrices] = useState<Map<string, number>>(new Map());
     const [internalLoadingPrices, setInternalLoadingPrices] = useState(false);
@@ -83,6 +86,11 @@ const PortfolioVisualizer: React.FC<Props> = ({
     // Goal Editing State
     const [isEditingPrompt, setIsEditingPrompt] = useState(false);
     const [editPromptText, setEditPromptText] = useState('');
+
+    // Rename Modal State
+    const [showRenameModal, setShowRenameModal] = useState(false);
+    const [renameSliceId, setRenameSliceId] = useState<string | null>(null);
+    const [renameName, setRenameName] = useState('');
 
     // Reallocation State (NEW for flexible allocation feature)
     const [reallocationMode, setReallocationMode] = useState(false);
@@ -221,6 +229,14 @@ const PortfolioVisualizer: React.FC<Props> = ({
 
     const handleAllocationChange = (value: number) => {
         setNewAllocation(value);
+
+        // Validate allocation range
+        if (value <= 0 || value > 100) {
+            setAllocationError('Allocation must be between 0.01% and 100%');
+        } else {
+            setAllocationError(null);
+        }
+
         const currentTotal = calculateCurrentTotal();
         const newTotal = currentTotal + value;
         if (newTotal > 100) {
@@ -240,6 +256,12 @@ const PortfolioVisualizer: React.FC<Props> = ({
 
     const handleAddSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Validate allocation
+        if (newAllocation <= 0 || newAllocation > 100) {
+            setAllocationError('Allocation must be between 0.01% and 100%');
+            return;
+        }
 
         // Validate ticker for HOLDING type
         if (newSliceType === SliceType.HOLDING && newSymbol) {
@@ -271,6 +293,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
             setNewSymbol('');
             setNewAllocation(0);
             setTickerError(null);
+            setAllocationError(null);
             setReallocationMode(false);
             setProposedRebalance([]);
         }
@@ -300,7 +323,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
     return (
         <div className="flex flex-col h-full bg-slate-800 rounded-xl border border-slate-700 overflow-hidden relative">
             {/* Header / Breadcrumbs */}
-            <div className="p-4 border-b border-slate-700 bg-slate-900/50 flex items-center justify-between">
+            <div className="p-4 pb-3 border-b border-slate-700 bg-slate-900/50 flex items-center justify-between">
                 <div className="flex items-center space-x-2 overflow-x-auto">
                     {path.map((slice, index) => (
                         <div key={slice.id} className="flex items-center text-sm shrink-0">
@@ -317,13 +340,13 @@ const PortfolioVisualizer: React.FC<Props> = ({
                                     <button
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            const newName = window.prompt("Rename Slice:", slice.name);
-                                            if (newName && newName !== slice.name) {
-                                                onRenameSlice(slice.id, newName);
-                                            }
+                                            setRenameSliceId(slice.id);
+                                            setRenameName(slice.name);
+                                            setShowRenameModal(true);
                                         }}
                                         className="ml-2 p-1 text-slate-500 hover:text-indigo-400 transition-colors"
                                         title="Rename Slice"
+                                        data-testid="rename-slice-button"
                                     >
                                         <Pencil className="w-3 h-3" />
                                     </button>
@@ -453,10 +476,10 @@ const PortfolioVisualizer: React.FC<Props> = ({
             )}
 
             {/* Content Area */}
-            <div className="flex-1 flex flex-col md:flex-row p-4 gap-6 relative z-0">
+            <div className="flex-1 flex flex-col lg:flex-row p-6 gap-6 relative z-0 overflow-y-auto">
 
                 {/* Chart */}
-                <div className="h-[300px] md:h-auto md:flex-1 relative">
+                <div className="h-[350px] lg:h-auto lg:flex-1 lg:min-h-[400px] relative">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -497,7 +520,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
                 </div>
 
                 {/* List Details */}
-                <div className="flex-1 overflow-y-auto pr-2 min-h-0 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                <div className="flex-1 lg:max-w-md overflow-y-auto pr-2 min-h-0 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
                     <h3 className="text-sm font-medium text-slate-400 mb-3 uppercase tracking-wider flex justify-between">
                         <span>Allocation Breakdown</span>
                         <span className="text-xs normal-case opacity-50">Click items to drill down</span>
@@ -554,146 +577,221 @@ const PortfolioVisualizer: React.FC<Props> = ({
 
             {/* Add Slice Modal Overlay */}
             {showAddModal && (
-                <div className="absolute inset-0 bg-slate-900/90 z-20 flex items-center justify-center p-4 backdrop-blur-sm">
-                    <div className="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-xl shadow-2xl p-6" data-testid="add-slice-modal">
-                        <div className="flex justify-between items-center mb-4">
+                <div className="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+                    <div className="bg-slate-800 border border-slate-700 w-full max-w-sm max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden my-auto" data-testid="add-slice-modal">
+                        <div className="flex justify-between items-center p-6 pb-4 shrink-0">
                             <h3 className="text-lg font-bold text-white">Add New Slice</h3>
                             <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
                         </div>
-                        <form onSubmit={handleAddSubmit} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-semibold text-slate-400 mb-1">Type</label>
-                                <div className="flex bg-slate-900 p-1 rounded-lg mb-4 border border-slate-700">
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewSliceType(SliceType.HOLDING)}
-                                        className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.HOLDING
-                                            ? 'bg-indigo-600 text-white shadow-lg'
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                                            }`}
-                                    >
-                                        <TrendingUp className="w-4 h-4 mr-2" />
-                                        Holding
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setNewSliceType(SliceType.GROUP)}
-                                        className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.GROUP
-                                            ? 'bg-indigo-600 text-white shadow-lg'
-                                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                                            }`}
-                                    >
-                                        <Folder className="w-4 h-4 mr-2" />
-                                        Group
-                                    </button>
+                        <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0">
+                            <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-400 mb-1">Type</label>
+                                    <div className="flex bg-slate-900 p-1 rounded-lg mb-4 border border-slate-700">
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewSliceType(SliceType.HOLDING)}
+                                            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.HOLDING
+                                                ? 'bg-indigo-600 text-white shadow-lg'
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                                }`}
+                                        >
+                                            <TrendingUp className="w-4 h-4 mr-2" />
+                                            Holding
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setNewSliceType(SliceType.GROUP)}
+                                            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.GROUP
+                                                ? 'bg-indigo-600 text-white shadow-lg'
+                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
+                                                }`}
+                                        >
+                                            <Folder className="w-4 h-4 mr-2" />
+                                            Group
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {newSliceType === SliceType.GROUP && (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">
-                                        Name
-                                    </label>
-                                    <input
-                                        type="text"
-                                        value={newName}
-                                        onChange={(e) => setNewName(e.target.value)}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
-                                        placeholder="e.g. Tech Sector"
-                                    />
-                                </div>
-                            )}
+                                {newSliceType === SliceType.GROUP && (
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">
+                                            Name
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={newName}
+                                            onChange={(e) => setNewName(e.target.value)}
+                                            className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
+                                            placeholder="e.g. Tech Sector"
+                                        />
+                                    </div>
+                                )}
 
-                            {newSliceType === SliceType.HOLDING && (
-                                <div className="mb-4">
-                                    <label className="block text-sm font-medium text-slate-400 mb-1">
-                                        Ticker Name/Symbol
-                                    </label>
-                                    <TickerSearch
-                                        value={newSymbol}
-                                        onChange={setNewSymbol}
-                                        onSelect={(symbol, name) => {
-                                            setNewName(name);
-                                            setNewSymbol(symbol);
-                                        }}
-                                        placeholder="e.g. AAPL or Apple"
-                                    />
-                                    {validatingTicker && (
-                                        <p data-testid="validating-ticker" className="text-xs text-indigo-400 mt-1 flex items-center">
-                                            <Loader className="w-3 h-3 mr-1 animate-spin" />
-                                            Validating ticker...
-                                        </p>
-                                    )}
-                                    {tickerError && (
-                                        <p className="text-xs text-red-500 mt-1 pl-1 bg-red-500/10 p-1 rounded border border-red-500/20">{tickerError}</p>
-                                    )}
-                                </div>
-                            )}
-
-                            <div>
-                                <label htmlFor="target-allocation" className="block text-xs font-semibold text-slate-400 mb-1">Target Allocation (%)</label>
-                                <input
-                                    id="target-allocation"
-                                    type="number"
-                                    min="1" max="100"
-                                    value={newAllocation}
-                                    onChange={(e) => handleAllocationChange(Number(e.target.value))}
-                                    className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
-                                    required
-                                />
-                                <p className="text-[10px] text-slate-500 mt-1">Remaining allocation will be adjusted automatically or flagged.</p>
-
-                                {/* Reallocation Warning */}
-                                {reallocationMode && (
-                                    <div className="mt-3 p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
-                                        <p className="text-sm text-yellow-400 mb-2 flex items-center gap-2">
-                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                            </svg>
-                                            Total allocation exceeds 100% by {Math.round((calculateCurrentTotal() + newAllocation - 100) * 100) / 100}%
-                                        </p>
-
-                                        {proposedRebalance.length === 0 ? (
-                                            <button
-                                                type="button"
-                                                onClick={handleRebalanceClick}
-                                                className="w-full bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
-                                            >
-                                                <RefreshCw className="w-4 h-4" />
-                                                Auto-Rebalance Proportionally
-                                            </button>
-                                        ) : (
-                                            <div className="space-y-2" data-testid="rebalance-proposal">
-                                                <p className="text-xs text-slate-300 font-medium">Proposed Reallocation:</p>
-                                                {currentView.children?.map(child => {
-                                                    const newAlloc = proposedRebalance.find(r => r.id === child.id);
-                                                    return (
-                                                        <div key={child.id} className="flex items-center justify-between text-xs">
-                                                            <span className="text-slate-400">{child.name}</span>
-                                                            <span className="text-slate-300">
-                                                                {child.targetAllocation}% → <span className="text-green-400 font-bold">{newAlloc?.targetAllocation}%</span>
-                                                            </span>
-                                                        </div>
-                                                    );
-                                                })}
-                                                <p className="text-xs text-green-400 mt-2">✓ Total will be 100%</p>
-                                            </div>
+                                {newSliceType === SliceType.HOLDING && (
+                                    <div className="mb-4">
+                                        <label className="block text-sm font-medium text-slate-400 mb-1">
+                                            Ticker Name/Symbol
+                                        </label>
+                                        <TickerSearch
+                                            value={newSymbol}
+                                            onChange={setNewSymbol}
+                                            onSelect={(symbol, name) => {
+                                                setNewName(name);
+                                                setNewSymbol(symbol);
+                                            }}
+                                            placeholder="e.g. AAPL or Apple"
+                                        />
+                                        {validatingTicker && (
+                                            <p data-testid="validating-ticker" className="text-xs text-indigo-400 mt-1 flex items-center">
+                                                <Loader className="w-3 h-3 mr-1 animate-spin" />
+                                                Validating ticker...
+                                            </p>
+                                        )}
+                                        {tickerError && (
+                                            <p className="text-xs text-red-500 mt-1 pl-1 bg-red-500/10 p-1 rounded border border-red-500/20">{tickerError}</p>
                                         )}
                                     </div>
                                 )}
+
+                                <div>
+                                    <label htmlFor="target-allocation" className="block text-xs font-semibold text-slate-400 mb-1">Target Allocation (%)</label>
+                                    <input
+                                        id="target-allocation"
+                                        type="number"
+                                        min="0.01" max="100" step="0.01"
+                                        value={newAllocation}
+                                        onChange={(e) => handleAllocationChange(Number(e.target.value))}
+                                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
+                                        required
+                                    />
+                                    {allocationError && (
+                                        <p className="text-xs text-red-500 mt-1 pl-1 bg-red-500/10 p-1 rounded border border-red-500/20">{allocationError}</p>
+                                    )}
+                                    <p className="text-[10px] text-slate-500 mt-1">Remaining allocation will be adjusted automatically or flagged.</p>
+
+                                    {/* Reallocation Warning */}
+                                    {reallocationMode && (
+                                        <div className="mt-3 p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
+                                            <p className="text-sm text-yellow-400 mb-2 flex items-center gap-2">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                                </svg>
+                                                Total allocation exceeds 100% by {Math.round((calculateCurrentTotal() + newAllocation - 100) * 100) / 100}%
+                                            </p>
+
+                                            {proposedRebalance.length === 0 ? (
+                                                <button
+                                                    type="button"
+                                                    onClick={handleRebalanceClick}
+                                                    className="w-full bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <RefreshCw className="w-4 h-4" />
+                                                    Auto-Rebalance Proportionally
+                                                </button>
+                                            ) : (
+                                                <div className="space-y-2" data-testid="rebalance-proposal">
+                                                    <p className="text-xs text-slate-300 font-medium">Proposed Reallocation:</p>
+                                                    {currentView.children?.map(child => {
+                                                        const newAlloc = proposedRebalance.find(r => r.id === child.id);
+                                                        return (
+                                                            <div key={child.id} className="flex items-center justify-between text-xs">
+                                                                <span className="text-slate-400">{child.name}</span>
+                                                                <span className="text-slate-300">
+                                                                    {child.targetAllocation}% → <span className="text-green-400 font-bold">{newAlloc?.targetAllocation}%</span>
+                                                                </span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    <p className="text-xs text-green-400 mt-2">✓ Total will be 100%</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
 
+                            <div className="px-6 pb-6 pt-2 shrink-0 border-t border-slate-700">
+                                <button
+                                    type="submit"
+                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                    disabled={validatingTicker || allocationError !== null}
+                                >
+                                    {validatingTicker && <Loader className="w-4 h-4 animate-spin" />}
+                                    {validatingTicker ? 'Validating...' : 'Add Slice'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
 
-
-
+            {/* Rename Slice Modal */}
+            {showRenameModal && renameSliceId && (
+                <div className="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+                    <div className="bg-slate-800 border border-slate-700 w-full max-w-sm rounded-xl shadow-2xl" data-testid="rename-slice-modal">
+                        <div className="flex justify-between items-center p-6 pb-4 border-b border-slate-700">
+                            <h3 className="text-lg font-bold text-white">Rename Slice</h3>
                             <button
-                                type="submit"
-                                className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-colors mt-2 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                disabled={validatingTicker}
+                                onClick={() => {
+                                    setShowRenameModal(false);
+                                    setRenameSliceId(null);
+                                    setRenameName('');
+                                }}
+                                className="text-slate-400 hover:text-white transition-colors"
                             >
-                                {validatingTicker && <Loader className="w-4 h-4 animate-spin" />}
-                                {validatingTicker ? 'Validating...' : 'Add Slice'}
+                                <X className="w-5 h-5" />
                             </button>
+                        </div>
+                        <form
+                            onSubmit={(e) => {
+                                e.preventDefault();
+                                if (renameName.trim() && onRenameSlice) {
+                                    onRenameSlice(renameSliceId, renameName.trim());
+                                    setShowRenameModal(false);
+                                    setRenameSliceId(null);
+                                    setRenameName('');
+                                }
+                            }}
+                            className="p-6 pt-4 space-y-4"
+                        >
+                            <div>
+                                <label htmlFor="rename-input" className="block text-xs font-semibold text-slate-400 mb-2">
+                                    New Name
+                                </label>
+                                <input
+                                    id="rename-input"
+                                    type="text"
+                                    value={renameName}
+                                    onChange={(e) => setRenameName(e.target.value)}
+                                    className="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-white focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+                                    placeholder="Enter new name..."
+                                    autoFocus
+                                    required
+                                    data-testid="rename-input"
+                                />
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setShowRenameModal(false);
+                                        setRenameSliceId(null);
+                                        setRenameName('');
+                                    }}
+                                    className="flex-1 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition-colors font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={!renameName.trim()}
+                                    className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    data-testid="rename-submit"
+                                >
+                                    Rename
+                                </button>
+                            </div>
                         </form>
                     </div>
                 </div>

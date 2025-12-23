@@ -127,8 +127,8 @@ describe('App Layout & Responsiveness', () => {
         expect(permanentSidebarContainer).toHaveClass('hidden');
     });
 
-    test('Mobile (375px): Pie Chart Visibility Fix (h-[300px])', async () => {
-        // Verify the fix: Chart container must have h-[300px] on mobile
+    test('Mobile (375px): Pie Chart Visibility Fix (h-[350px])', async () => {
+        // Verify the fix: Chart container must have h-[350px] on mobile
 
         const rootSlice: any = {
             id: 'root',
@@ -160,9 +160,10 @@ describe('App Layout & Responsiveness', () => {
         expect(responsiveContainer).toBeInTheDocument();
 
         const parentDiv = responsiveContainer?.parentElement;
-        expect(parentDiv).toHaveClass('h-[300px]');
-        expect(parentDiv).toHaveClass('md:h-auto');
-        expect(parentDiv).toHaveClass('md:flex-1');
+        expect(parentDiv).toHaveClass('h-[350px]');
+        expect(parentDiv).toHaveClass('lg:h-auto');
+        expect(parentDiv).toHaveClass('lg:flex-1');
+        expect(parentDiv).toHaveClass('lg:min-h-[400px]');
     });
 
     test('Desktop (1024px/LG): Sidebar visibility toggles with Chat', async () => {
