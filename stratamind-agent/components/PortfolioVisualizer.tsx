@@ -82,6 +82,8 @@ const PortfolioVisualizer: React.FC<Props> = ({
 
     const effectivePriceError = priceError || internalPriceError;
     const effectiveLastUpdate = lastPriceUpdate || internalLastUpdate;
+    const effectiveLoadingPrices = loadingPrices || internalLoadingPrices;
+    const effectivePrices = prices.size > 0 ? prices : internalPrices;
 
     // Goal Editing State
     const [isEditingPrompt, setIsEditingPrompt] = useState(false);

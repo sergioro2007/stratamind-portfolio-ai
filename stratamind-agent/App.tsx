@@ -847,35 +847,57 @@ function App() {
 
     const updateActiveAccount = async (updates: Partial<Account>) => {
         if (!activeInstitution || !activeAccount) return;
-        const updated = await db.updateAccountDetails(activeInstitution.id, activeAccount.id, updates);
-        setInstitutions(updated);
 
-        // Record snapshot on significant updates (value/holdings change implicit in rebalance/add ticker)
-        // In a real app, we'd check if value actually changed, but here we assume these actions warrant a snapshot
+        // Optimistic Update: Update local state immediately to prevents race conditions (stale data on next interaction)
+        setInstitutions(prev => prev.map(inst => {
+            if (inst.id === activeInstitution.id) {
+                return {
+                    ...inst,
+                    accounts: inst.accounts.map(acc => {
+                        if (acc.id === activeAccount.id) {
+                            return { ...acc, ...updates };
+                        }
+                        return acc;
+                    })
+                };
+            }
+            return inst;
+        }));
+
         try {
-            const updatedAcc = updated.find(i => i.id === activeInstitution.id)?.accounts.find(a => a.id === activeAccount.id);
-            if (updatedAcc) {
-                await db.recordPerformanceSnapshot({
-                    accountId: updatedAcc.id,
-                    timestamp: Date.now(),
-                    totalValue: updatedAcc.totalValue,
-                    cashBalance: updatedAcc.cashBalance,
-                    holdingsValue: updatedAcc.totalValue - updatedAcc.cashBalance,
-                    dayChange: 0,
-                    dayChangePercent: 0
-                });
-                // Refresh local history immediately to show point on chart
-                const newHistory = await db.getPerformanceHistory(updatedAcc.id);
-                setFullHistory(newHistory.map(h => ({
-                    ...h,
-                    totalValue: Number(h.totalValue),
-                    cashBalance: Number(h.cashBalance),
-                    holdingsValue: Number(h.holdingsValue),
-                    timestamp: Number(h.timestamp)
-                })).sort((a, b) => a.timestamp - b.timestamp));
+            const updated = await db.updateAccountDetails(activeInstitution.id, activeAccount.id, updates);
+            // Re-sync with server state (optional, but good for consistency/ID generation)
+            setInstitutions(updated);
+
+            // Record snapshot on significant updates (value/holdings change implicit in rebalance/add ticker)
+            // In a real app, we'd check if value actually changed, but here we assume these actions warrant a snapshot
+            try {
+                const updatedAcc = updated.find(i => i.id === activeInstitution.id)?.accounts.find(a => a.id === activeAccount.id);
+                if (updatedAcc) {
+                    await db.recordPerformanceSnapshot({
+                        accountId: updatedAcc.id,
+                        timestamp: Date.now(),
+                        totalValue: updatedAcc.totalValue,
+                        cashBalance: updatedAcc.cashBalance,
+                        holdingsValue: updatedAcc.totalValue - updatedAcc.cashBalance,
+                        dayChange: 0,
+                        dayChangePercent: 0
+                    });
+                    // Refresh local history immediately to show point on chart
+                    const newHistory = await db.getPerformanceHistory(updatedAcc.id);
+                    setFullHistory(newHistory.map(h => ({
+                        ...h,
+                        totalValue: Number(h.totalValue),
+                        cashBalance: Number(h.cashBalance),
+                        holdingsValue: Number(h.holdingsValue),
+                        timestamp: Number(h.timestamp)
+                    })).sort((a, b) => a.timestamp - b.timestamp));
+                }
+            } catch (e) {
+                console.error("Failed to record snapshot", e);
             }
         } catch (e) {
-            console.error("Failed to record snapshot", e);
+            console.error("Failed to update account", e);
         }
     };
 
