@@ -1262,6 +1262,7 @@ function App() {
                                 <button
                                     onClick={() => handleAddAccount(inst.id)}
                                     className="w-full flex items-center gap-2 px-3 py-2 text-xs text-slate-500 hover:text-white transition-colors"
+                                    data-testid="add-account-button"
                                 >
                                     <Plus className="w-3 h-3" /> Add Account
                                 </button>
@@ -1275,6 +1276,7 @@ function App() {
                     <button
                         onClick={handleAddInstitution}
                         className="w-full flex items-center justify-center gap-2 p-2 border border-dashed border-slate-700/50 rounded-lg text-slate-500 hover:text-indigo-400 hover:border-indigo-500/50 hover:bg-indigo-500/5 transition-all text-sm font-medium group"
+                        data-testid="add-institution-button"
                     >
                         <Plus className="w-4 h-4 group-hover:scale-110 transition-transform" />
                         Add Institution
