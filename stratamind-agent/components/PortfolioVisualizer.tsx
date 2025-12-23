@@ -9,10 +9,12 @@ import {
     ExternalLink,
     Loader,
     X,
-    Pencil
+    Pencil,
+    Settings
 } from 'lucide-react';
 import { fetchStockPrice, validateTicker, clearCache } from '../services/marketData';
 import TickerSearch from './TickerSearch';
+import { ManageSlicesModal } from './ManageSlicesModal';
 
 interface Props {
     rootSlice: PortfolioSlice;
@@ -20,6 +22,7 @@ interface Props {
     onAddSlice?: (parentId: string, type: SliceType, name: string, symbol: string | undefined, allocation: number, rebalanceUpdates?: Array<{ id: string, targetAllocation: number }>) => void;
     onRemoveSlice?: (sliceId: string) => void;
     onRenameSlice?: (sliceId: string, newName: string) => void;
+    onUpdateSlices?: (parentId: string, updatedSliceName: string, updatedSlices: PortfolioSlice[]) => void;
     // Market data props
     showPrices?: boolean;
     loadingPrices?: boolean;
@@ -51,6 +54,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
     onAddSlice,
     onRemoveSlice,
     onRenameSlice,
+    onUpdateSlices,
     showPrices = false,
     loadingPrices = false,
     priceError = null,
@@ -91,6 +95,9 @@ const PortfolioVisualizer: React.FC<Props> = ({
     const [showRenameModal, setShowRenameModal] = useState(false);
     const [renameSliceId, setRenameSliceId] = useState<string | null>(null);
     const [renameName, setRenameName] = useState('');
+
+    // Manage Slices Modal State
+    const [showManageSlicesModal, setShowManageSlicesModal] = useState(false);
 
     // Reallocation State (NEW for flexible allocation feature)
     const [reallocationMode, setReallocationMode] = useState(false);
@@ -321,7 +328,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
     };
 
     return (
-        <div className="flex flex-col h-full bg-slate-800 rounded-xl border border-slate-700 overflow-hidden relative">
+        <div className="flex flex-col h-full bg-slate-800 rounded-xl border border-slate-700 overflow-hidden relative" data-testid="portfolio-visualizer">
             {/* Header / Breadcrumbs */}
             <div className="p-4 pb-3 border-b border-slate-700 bg-slate-900/50 flex items-center justify-between">
                 <div className="flex items-center space-x-2 overflow-x-auto">
@@ -336,21 +343,6 @@ const PortfolioVisualizer: React.FC<Props> = ({
                                     {slice.type === SliceType.GROUP ? <Folder className="w-3 h-3 mr-1" /> : <TrendingUp className="w-3 h-3 mr-1" />}
                                     {slice.name}
                                 </button>
-                                {index === path.length - 1 && onRenameSlice && (
-                                    <button
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            setRenameSliceId(slice.id);
-                                            setRenameName(slice.name);
-                                            setShowRenameModal(true);
-                                        }}
-                                        className="ml-2 p-1 text-slate-500 hover:text-indigo-400 transition-colors"
-                                        title="Rename Slice"
-                                        data-testid="rename-slice-button"
-                                    >
-                                        <Pencil className="w-3 h-3" />
-                                    </button>
-                                )}
                             </div>
                         </div>
                     ))}
@@ -392,10 +384,11 @@ const PortfolioVisualizer: React.FC<Props> = ({
                     )}
                     {currentView.type === SliceType.GROUP && (
                         <button
-                            onClick={() => setShowAddModal(true)}
+                            onClick={() => setShowManageSlicesModal(true)}
                             className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
+                            title="Manage Portfolio"
                         >
-                            <Plus className="w-3 h-3" /> Add Slice
+                            <Settings className="w-3 h-3" /> Manage
                         </button>
                     )}
                 </div>
@@ -557,12 +550,6 @@ const PortfolioVisualizer: React.FC<Props> = ({
                                             </p>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={(e) => handleDelete(e, item.raw.id)}
-                                        className="p-2 text-slate-500 hover:text-red-400 hover:bg-red-400/10 rounded transition-colors"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -795,6 +782,31 @@ const PortfolioVisualizer: React.FC<Props> = ({
                         </form>
                     </div>
                 </div>
+            )}
+
+            {/* Manage Slices Modal */}
+            {showManageSlicesModal && (
+                <ManageSlicesModal
+                    currentSlice={currentView}
+                    slices={currentView.children || []}
+                    onSave={(updatedSliceName, updatedSlices) => {
+                        // Handle both slice name update and children updates
+                        if (onRenameSlice && updatedSliceName !== currentView.name) {
+                            onRenameSlice(currentView.id, updatedSliceName);
+                        }
+                        if (onUpdateSlices) {
+                            onUpdateSlices(currentView.id, updatedSliceName, updatedSlices);
+                        }
+                        setShowManageSlicesModal(false);
+                    }}
+                    onAddSlice={(type, name, symbol, allocation) => {
+                        if (onAddSlice) {
+                            onAddSlice(currentView.id, type, name, symbol, allocation);
+                        }
+                    }}
+                    onClose={() => setShowManageSlicesModal(false)}
+                    totalValue={totalValue}
+                />
             )}
         </div>
     );

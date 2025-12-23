@@ -528,6 +528,28 @@ function App() {
         await updateActiveAccount({ strategies: updatedStrategies });
     };
 
+    const handleUpdateSlices = async (parentId: string, updatedSliceName: string, updatedChildren: PortfolioSlice[]) => {
+        if (!activeAccount) return;
+
+        // Helper to update the parent slice's name and children deeply in the tree
+        const updateTree = (slices: PortfolioSlice[]): PortfolioSlice[] => {
+            return slices.map(s => {
+                if (s.id === parentId) {
+                    // Found the parent - update its name and children
+                    return { ...s, name: updatedSliceName, children: updatedChildren };
+                }
+                if (s.children) {
+                    // Recurse into children
+                    return { ...s, children: updateTree(s.children) };
+                }
+                return s;
+            });
+        };
+
+        const updatedStrategies = updateTree(activeAccount.strategies);
+        await updateActiveAccount({ strategies: updatedStrategies });
+    };
+
     const handleRemoveSlice = async (sliceId: string) => {
         if (!activeAccount) return;
 
@@ -1465,6 +1487,7 @@ function App() {
                                         onAddSlice={handleAddSliceWithRebalance}
                                         onUpdate={(updated) => { /* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
                                         onRenameSlice={handleRenameSlice}
+                                        onUpdateSlices={(parentId, sliceName, children) => handleUpdateSlices(parentId, sliceName, children)}
                                         onRemoveSlice={handleRemoveSlice}
                                         onUpdatePrompt={handleUpdatePrompt}
                                     />
