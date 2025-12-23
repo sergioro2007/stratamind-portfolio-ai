@@ -1283,8 +1283,26 @@ function App() {
             </div>
 
             {/* User Profile / Context Section at Bottom */}
-            <div className="p-4 border-t border-slate-800 bg-slate-900/50">
-                <div className="flex items-center gap-3">
+            <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex flex-col gap-3">
+                {/* User Info Box */}
+                {isLoggedIn && (
+                    <div className="bg-slate-800/60 border border-slate-700/50 rounded-lg p-2.5 flex items-center justify-between group px-3">
+                        <div className="flex items-center gap-2 overflow-hidden">
+                            <User className="w-3.5 h-3.5 text-indigo-400" />
+                            <span className="text-xs text-slate-200 font-medium">{currentUser?.email}</span>
+                        </div>
+                        <button
+                            onClick={handleLogout}
+                            className="p-1 text-slate-400 hover:text-red-400 hover:bg-slate-700/50 rounded transition-colors"
+                            title="Logout"
+                        >
+                            <LogOut className="w-3.5 h-3.5" />
+                        </button>
+                    </div>
+                )}
+
+                {/* Original Role Block */}
+                <div className="flex items-center gap-3 px-1">
                     <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center border border-slate-600 shadow-inner">
                         <span className="text-xs font-bold text-slate-300">USR</span>
                     </div>
@@ -1308,12 +1326,29 @@ function App() {
                     </div>
                     <h1 className="font-bold text-white tracking-tight">StrataMind</h1>
                 </div>
-                <button
-                    onClick={() => setIsMobileMenuOpen(true)}
-                    className="p-2 text-slate-400 hover:text-white"
-                >
-                    <Menu className="w-6 h-6" />
-                </button>
+                <div className="flex items-center gap-3">
+                    {/* Mobile User Info */}
+                    {isLoggedIn && (
+                        <div className="flex items-center gap-2 mr-2">
+                            <div className="flex items-center gap-2 px-2 py-1 rounded-lg bg-slate-800/80 border border-slate-700/50">
+                                <span className="text-xs text-slate-300">{currentUser?.email || 'User'}</span>
+                                <button
+                                    onClick={handleLogout}
+                                    className="p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                    title="Logout"
+                                >
+                                    <LogOut className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                    )}
+                    <button
+                        onClick={() => setIsMobileMenuOpen(true)}
+                        className="p-2 text-slate-400 hover:text-white"
+                    >
+                        <Menu className="w-6 h-6" />
+                    </button>
+                </div>
             </div>
 
             {/* Desktop Sidebar (Permanent - Landscape Only) */}
@@ -1397,21 +1432,7 @@ function App() {
 
                     {/* Header Actions */}
                     <div className="flex items-center gap-3">
-                        {/* User Info */}
-                        {isLoggedIn && (
-                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                                <User className="w-4 h-4 text-slate-400" />
-                                <span className="text-sm text-slate-300">{currentUser?.email || 'User'}</span>
-                                <button
-                                    onClick={handleLogout}
-                                    className="ml-1 p-1 text-slate-400 hover:text-red-400 transition-colors"
-                                    title="Logout"
-                                >
-                                    <LogOut className="w-4 h-4" />
-                                </button>
-                            </div>
-                        )}
-                        <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium flex items-center gap-2 select-none cursor-help" title="AI Assistant is ready to help">
+                        <div className="hidden lg:flex px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium items-center gap-2 select-none cursor-help" title="AI Assistant is ready to help">
                             <span className="relative flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
