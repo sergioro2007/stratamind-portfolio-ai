@@ -80,6 +80,9 @@ vi.mock('../../../services/database', () => {
                 save(data);
                 return data;
             }),
+            getPerformanceHistory: vi.fn(async () => []),
+            getPerformanceStats: vi.fn(async () => null),
+            recordPerformanceSnapshot: vi.fn(async () => { }),
         }
     };
 });
@@ -89,6 +92,7 @@ vi.mock('../../../services/marketData', () => ({
     validateTicker: vi.fn(() => Promise.resolve(true)),
     fetchStockPrice: vi.fn(() => Promise.resolve(150.00)),
     searchSymbols: vi.fn(() => Promise.resolve([])),
+    fetchHistoricalData: vi.fn(async () => []),
     clearCache: vi.fn()
 }));
 

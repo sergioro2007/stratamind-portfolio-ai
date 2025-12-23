@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, DollarSign, Plus, Settings, ChevronRight, Send, Loader2, Pencil, Trash2, PieChart, TrendingUp, Shield, Menu, X, Activity } from 'lucide-react';
+import { Layout, DollarSign, Plus, Settings, ChevronRight, Send, Loader2, Pencil, Trash2, PieChart, TrendingUp, Shield, Menu, X, Activity, MessageSquare } from 'lucide-react';
 import PortfolioVisualizer from './components/PortfolioVisualizer';
 import { PortfolioSlice, Account, Institution, SliceType } from './types';
 import { db } from './services/database';
@@ -129,6 +129,26 @@ function App() {
     const [chatSession, setChatSession] = useState<any>(null);
     const [pendingProposal, setPendingProposal] = useState<AIProposal | null>(null);
     const [lastUserMessage, setLastUserMessage] = useState<string>("");
+    const [isChatOpen, setChatOpen] = useState(false);
+
+    // Effect: Handle Responsive Chat State
+    useEffect(() => {
+        const xlQuery = window.matchMedia('(min-width: 1280px)');
+
+        const handleResize = (e: MediaQueryListEvent | MediaQueryList) => {
+            if (e.matches) {
+                setChatOpen(true);
+            } else {
+                setChatOpen(false);
+            }
+        };
+
+        // Initial check
+        handleResize(xlQuery);
+
+        xlQuery.addEventListener('change', handleResize);
+        return () => xlQuery.removeEventListener('change', handleResize);
+    }, []);
 
     // -------------------------------------------------------------------------
     // INIT & EFFECT
@@ -1091,7 +1111,7 @@ function App() {
             </div>
 
             {/* Institutions List */}
-            <div className="flex-1 overflow-y-auto py-4 px-3 space-y-6 scrollbar-hide">
+            <div className="flex-1 overflow-y-auto py-4 px-2 space-y-6 scrollbar-hide">
                 {institutions.map(inst => {
                     const isActive = inst.id === activeInstitutionId;
                     return (
@@ -1145,7 +1165,11 @@ function App() {
                                                     <DollarSign className="w-4 h-4" />
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <p className={`text-sm font-medium truncate ${isAccActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`} data-testid={`sidebar-account-${acc.name}`}>
+                                                    <p
+                                                        className={`text-sm font-medium truncate ${isAccActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'}`}
+                                                        data-testid={`sidebar-account-${acc.name}`}
+                                                        title={acc.name}
+                                                    >
                                                         {acc.name}
                                                     </p>
                                                     <p className="text-[10px] text-slate-500 truncate">
@@ -1153,11 +1177,11 @@ function App() {
                                                     </p>
                                                 </div>
 
-                                                {/* Config Button (Always render, show on hover) */}
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                {/* Config Button (Absolute to save space) */}
+                                                <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity bg-slate-800 shadow-lg rounded-lg p-0.5 border border-slate-700">
                                                     <button
                                                         onClick={(e) => handleOpenSettings(e, inst.id, acc.id)}
-                                                        className="p-1.5 text-slate-500 hover:text-white hover:bg-slate-700 rounded transition-all"
+                                                        className="p-1.5 text-slate-400 hover:text-white hover:bg-slate-700 rounded transition-all"
                                                         title="Account Settings"
                                                         data-testid="account-settings-button"
                                                     >
@@ -1168,7 +1192,7 @@ function App() {
                                                             e.stopPropagation();
                                                             handleDeleteAccount(inst.id, acc.id);
                                                         }}
-                                                        className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-all"
+                                                        className="p-1.5 text-slate-400 hover:text-red-400 hover:bg-red-900/20 rounded transition-all"
                                                         title="Delete Account"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
@@ -1235,10 +1259,10 @@ function App() {
     );
 
     return (
-        <div className="flex flex-col md:flex-row h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+        <div className="flex flex-col lg:flex-row h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
 
             {/* Mobile Header */}
-            <div className="md:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
+            <div className="lg:landscape:hidden flex items-center justify-between p-4 bg-slate-900 border-b border-slate-800 sticky top-0 z-30">
                 <div className="flex items-center gap-3">
                     <div className="w-8 h-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
                         <Layout className="w-5 h-5 text-white" />
@@ -1253,14 +1277,23 @@ function App() {
                 </button>
             </div>
 
-            {/* Desktop Sidebar (Permanent) */}
-            <div className="hidden md:flex w-64 border-r border-slate-800 bg-slate-900 flex-col shrink-0">
+            {/* Desktop Sidebar (Permanent - Landscape Only) */}
+            {/* Logic: Hidden on mobile/portrait. On generic landscape, it's flex. 
+                BUT if Chat is Open and we are below XL (1280px), we force hide it to save space. 
+             */}
+            {/* Logic: Hidden on mobile/portrait. On generic landscape, it's flex. 
+                BUT if Chat is Open and we are below XL (1280px), we force hide it to save space. 
+             */}
+            <div className={`
+                w-64 border-r border-slate-800 bg-slate-900 flex-col shrink-0
+                ${isChatOpen ? 'hidden xl:flex' : 'hidden lg:landscape:flex'}
+            `}>
                 {SidebarContent}
             </div>
 
             {/* Mobile Sidebar (Drawer) */}
             {isMobileMenuOpen && (
-                <div className="fixed inset-0 z-50 flex md:hidden">
+                <div className="fixed inset-0 z-50 flex lg:landscape:hidden">
                     {/* Backdrop */}
                     <div
                         className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity"
@@ -1280,33 +1313,41 @@ function App() {
             )}
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden relative bg-slate-950">
+            {/* Logic: If Chat is Open and we are < XL, the ChatPanel is FIXED and covers content. 
+                So we add right padding (pr-96) to this container so the scroll bar and content 
+                aren't hidden behind the chat panel. 
+                On XL+, the chat panel becomes relative (flex-row), so no padding needed.
+             */}
+            <div className={`
+                flex-1 flex flex-col overflow-hidden relative bg-slate-950
+                ${isChatOpen ? 'lg:pr-96 xl:pr-0' : ''}
+            `}>
                 {activeAccount ? (
                     <>
                         {/* Streamlined Header without Strategy Tabs */}
-                        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md sticky top-0 z-20">
-                            <div className="flex flex-col">
-                                <h1 className="text-lg font-bold text-white flex items-center gap-2">
+                        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md sticky top-0 z-20 gap-4">
+                            <div className="flex flex-col min-w-0 flex-1">
+                                <h1 className="text-lg font-bold text-white flex items-center gap-2 overflow-hidden">
                                     {activeStrategy ? (
-                                        <>
-                                            <span className="text-slate-400 font-normal">{activeAccount.name} /</span>
-                                            {activeStrategy.name}
-                                        </>
+                                        <div className="flex items-center gap-2 truncate">
+                                            <span className="text-slate-400 font-normal shrink-0">{activeAccount.name}</span>
+                                            <span className="text-slate-600">/</span>
+                                            <span className="truncate">{activeStrategy.name}</span>
+                                        </div>
                                     ) : (
-                                        activeAccount.name
+                                        <span className="truncate">{activeAccount.name}</span>
                                     )}
                                 </h1>
-                                <div className="flex items-center gap-4 text-xs font-mono mt-0.5">
-                                    <div className="flex items-center gap-2">
+                                <div className="flex items-center gap-4 text-xs font-mono mt-0.5 truncate">
+                                    <div className="flex items-center gap-2 shrink-0">
                                         <span className="text-3xl font-bold text-white tracking-tight">
                                             ${activeAccount.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </span>
                                     </div>
-                                    <div className="w-1 h-1 rounded-full bg-slate-700" />
-                                    <div className="flex items-center gap-1.5 group">
+                                    <div className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
+                                    <div className="flex items-center gap-1.5 group shrink-0">
                                         <span className="text-slate-500">CASH:</span>
                                         <span className="text-emerald-400 font-bold">${activeAccount.cashBalance.toLocaleString()}</span>
-
                                     </div>
                                 </div>
                             </div>
@@ -1321,6 +1362,13 @@ function App() {
                                     AI Agent Ready
                                 </div>
                                 <button
+                                    onClick={() => setChatOpen(!isChatOpen)}
+                                    className={`p-2 rounded-lg transition-colors xl:hidden ${isChatOpen ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                                    title="Toggle Chat"
+                                >
+                                    <MessageSquare className="w-5 h-5" />
+                                </button>
+                                <button
                                     onClick={(e) => activeAccount && activeInstitution && handleOpenSettings(e, activeInstitution.id, activeAccount.id)}
                                     className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
                                     title="Account Settings"
@@ -1331,11 +1379,11 @@ function App() {
                             </div>
                         </header>
 
-                        <main className="flex-1 flex flex-col md:flex-row overflow-hidden">
+                        <main className="flex-1 flex flex-col xl:flex-row overflow-hidden relative">
                             <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
                                 {/* Performance Section */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                                    <div className="md:col-span-2">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-6 mb-6">
+                                    <div className="lg:col-span-2 xl:col-span-1 2xl:col-span-2">
                                         <PerformanceChart
                                             history={performanceHistory.length > 0 ? performanceHistory : MOCK_HISTORY}
                                             timeRange={timeRange}
@@ -1357,7 +1405,7 @@ function App() {
                                 </div>
 
                                 {/* Stats Grid */}
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-4">
                                     <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
                                         <p className="text-xs text-slate-400 uppercase">Cash Available</p>
                                         <div className="flex items-center gap-2 mt-1">
@@ -1395,7 +1443,7 @@ function App() {
                                             rootSlice={activeStrategy}
                                             totalValue={(activeAccount.totalValue - activeAccount.cashBalance) * (activeStrategy.targetAllocation / 100)} // Prorated Investing Power
                                             onAddSlice={handleAddSliceWithRebalance}
-                                            onUpdate={(updated) => {/* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
+                                            onUpdate={(updated) => { /* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
                                             onRenameSlice={handleRenameSlice}
                                             onRemoveSlice={handleRemoveSlice}
                                             onUpdatePrompt={handleUpdatePrompt}
@@ -1409,19 +1457,31 @@ function App() {
                                 </div>
                             </div>
 
-                            {/* Chat Panel */}
-                            <div className="w-full h-[500px] md:h-auto md:w-96 border-t md:border-t-0 md:border-l border-slate-800 bg-slate-900 shadow-2xl z-10 shrink-0">
-                                <ChatPanel
-                                    messages={chatMessages}
-                                    onSendMessage={handleSendMessage}
-                                    pendingProposal={pendingProposal}
-                                    onApproveProposal={handleApproveProposal}
-                                    onRejectProposal={handleRejectProposal}
-                                    isTyping={isTyping}
-                                />
+                            {/* Chat Panel - Responsive */}
+                            <div className={`
+                                fixed inset-y-0 right-0 w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out
+                                xl:relative xl:transform-none xl:w-96 xl:translate-x-0
+                                ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
+                            `}>
+                                {/* Mobile Header for Chat */}
+                                <div className="xl:hidden flex items-center justify-between p-4 border-b border-slate-800">
+                                    <h3 className="font-bold text-white">AI Assistant</h3>
+                                    <button onClick={() => setChatOpen(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full">
+                                        <X className="w-5 h-5" />
+                                    </button>
+                                </div>
+                                <div className="h-full xl:h-auto flex-1 flex flex-col">
+                                    <ChatPanel
+                                        messages={chatMessages}
+                                        onSendMessage={handleSendMessage}
+                                        pendingProposal={pendingProposal}
+                                        onApproveProposal={handleApproveProposal}
+                                        onRejectProposal={handleRejectProposal}
+                                        isTyping={isTyping}
+                                    />
+                                </div>
                             </div>
-                        </main>
-                    </>
+                        </main>                    </>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4">
                         <Activity className="w-16 h-16 opacity-30" />

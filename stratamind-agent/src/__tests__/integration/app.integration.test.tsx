@@ -112,6 +112,9 @@ vi.mock('../../../services/database', () => {
                 save(data);
                 return data;
             }),
+            getPerformanceHistory: vi.fn(async () => []),
+            getPerformanceStats: vi.fn(async () => null),
+            recordPerformanceSnapshot: vi.fn(async () => { }),
         }
     };
 });
@@ -126,6 +129,7 @@ vi.mock('../../../services/marketData', () => ({
     }),
     fetchStockPrice: vi.fn(),
     validateTicker: vi.fn(async (symbol: string) => symbol.toUpperCase() === 'AAPL' || symbol.toUpperCase() === 'MSFT'),
+    fetchHistoricalData: vi.fn(async () => []),
     clearCache: vi.fn()
 }));
 
@@ -228,7 +232,9 @@ describe('Integration Tests - Complete User Workflows', () => {
                 expect(data).toBeDefined();
                 expect(Array.isArray(data)).toBe(true);
                 expect(data.length).toBeGreaterThan(0);
-                expect(screen.getByText('Test Account')).toBeInTheDocument();
+                // Relaxed check for Test Account to handle duplicates (e.g. sidebar + header)
+                const accounts = screen.getAllByText('Test Account');
+                expect(accounts.length).toBeGreaterThan(0);
             });
         });
     });

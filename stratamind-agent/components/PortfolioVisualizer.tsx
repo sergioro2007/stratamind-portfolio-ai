@@ -456,7 +456,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
             <div className="flex-1 flex flex-col md:flex-row p-4 gap-6 relative z-0">
 
                 {/* Chart */}
-                <div className="flex-1 min-h-[300px] relative">
+                <div className="h-[300px] md:h-auto md:flex-1 relative">
                     <ResponsiveContainer width="100%" height="100%">
                         <PieChart>
                             <Pie
@@ -497,7 +497,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
                 </div>
 
                 {/* List Details */}
-                <div className="flex-1 overflow-y-auto pr-2 h-full min-h-0 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
+                <div className="flex-1 overflow-y-auto pr-2 min-h-0 scrollbar-thin scrollbar-thumb-slate-700 scrollbar-track-transparent">
                     <h3 className="text-sm font-medium text-slate-400 mb-3 uppercase tracking-wider flex justify-between">
                         <span>Allocation Breakdown</span>
                         <span className="text-xs normal-case opacity-50">Click items to drill down</span>
