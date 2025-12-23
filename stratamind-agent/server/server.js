@@ -10,20 +10,7 @@ const PORT = 3001;
 app.use(cors());
 app.use(express.json());
 
-// Initialize DB Table if not exists
-db.serialize(() => {
-    db.run(`CREATE TABLE IF NOT EXISTS performance_snapshots (
-        id TEXT PRIMARY KEY,
-        account_id TEXT NOT NULL,
-        timestamp INTEGER NOT NULL,
-        total_value REAL,
-        cash_balance REAL,
-        holdings_value REAL,
-        day_change REAL,
-        day_change_percent REAL
-    )`);
-    db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_account_time ON performance_snapshots(account_id, timestamp)`);
-});
+
 
 // --- AUTH ROUTES ---
 
@@ -298,7 +285,10 @@ app.post('/api/performance/snapshot', requireAuth, (req, res) => {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.run(sql, [id, accountId, timestamp, totalValue, cashBalance, holdingsValue, dayChange || null, dayChangePercent || null], (err) => {
-        if (err) return res.status(500).json({ error: err.message });
+        if (err) {
+            console.error("SNAPSHOT ERROR:", err);
+            return res.status(500).json({ error: err.message });
+        }
         res.json({ id, timestamp });
     });
 });

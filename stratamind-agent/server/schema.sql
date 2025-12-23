@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS portfolio_slices (
 );
 -- Performance tracking: snapshots of portfolio value over time
 CREATE TABLE IF NOT EXISTS performance_snapshots (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT PRIMARY KEY,
   account_id TEXT NOT NULL,
   timestamp INTEGER NOT NULL,
   total_value REAL NOT NULL,
