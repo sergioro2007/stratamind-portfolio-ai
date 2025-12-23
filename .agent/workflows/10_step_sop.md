@@ -2,9 +2,9 @@
 description: Execute the strict 10-step Antigravity SOP loop for a new task (Feature/Fix)
 ---
 
-# 10-Step Antigravity SOP Loop (v2.1)
+# Antigravity SOP Loop (v2.2)
 
-This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" protocol with **mandatory coverage verification**.
+This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" protocol with **mandatory coverage and browser verification**.
 
 ## Step 1: Branch & Context (MANDATORY)
 1. Ask the user for the `ticket-slug` or `feature-name`.
@@ -79,7 +79,18 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - New code should have >= 80% coverage
 3. Run `npm run verify`.
 
-## Step 7: Coverage Verification (MANDATORY)
+## Step 7: Manual Browser Verification (Agent E)
+**MANDATORY**: Validates the UI/UX from a user's perspective.
+
+1. **Launch**: Start the development server (`npm run dev`).
+2. **Execute**: Use the `browser_subagent` to perform a real-world walkthrough.
+3. **Requirement**:
+   - **Minimum 20 Initial Tests/Checks**: The browser session MUST verify at least 20 distinct UI elements, flows, or states.
+   - **Continuous Expansion**: Add more checks to this step over time as features are added.
+4. **Capture**: Take screenshots of key states.
+5. **Verify**: Ensure no console errors or visual regressions.
+
+## Step 8: Coverage Verification (MANDATORY)
 **Critical**: This step cannot be skipped.
 
 1. Run coverage report:
@@ -103,7 +114,7 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - After: Y%
    - Delta: +Z%
 
-## Step 8: Regression & Performance Audit (Agent D)
+## Step 9: Regression & Performance Audit (Agent D)
 1. Review the changes made.
 2. Check for unintended side effects.
 3. Verify that Invariants from Step 3 are preserved.
@@ -112,12 +123,12 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - Unnecessary re-renders?
    - Memory leaks?
 
-## Step 9: Stabilize
-1. If `npm run verify` failed in Step 6, fix the code (preferred) or tests (if behavior change was planned).
+## Step 10: Stabilize
+1. If `npm run verify` failed (in Step 6) or Browser Verification failed (Step 7), fix the code (preferred) or tests.
 2. Repeat until Green.
 3. **Ensure all coverage thresholds are met**.
 
-## Step 10: Commit
+## Step 11: Commit
 1. Stage and commit the changes with descriptive messages.
    ```bash
    git add .
@@ -125,17 +136,18 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    ```
 2. Make atomic commits (one logical change per commit).
 
-## Step 11: Proof Artifact
+## Step 12: Proof Artifact
 1. Update `walkthrough.md` or create a new verification artifact.
 2. Embed the output of `npm run verify`.
 3. **Embed coverage report summary** (before/after comparison).
-4. List explicit "What Changed" and "What Didn't Change" (Invariants).
-5. **For UI changes**: Include screenshots or recordings.
-6. **For API changes**: Include example requests/responses.
-7. **For performance changes**: Include before/after metrics.
-8. **For coverage changes**: Include coverage % improvement.
+4. **Embed Browser Verification Evidence**: Link to the browser recording or screenshots of the 20 checks.
+5. List explicit "What Changed" and "What Didn't Change" (Invariants).
+6. **For UI changes**: Include screenshots or recordings.
+7. **For API changes**: Include example requests/responses.
+8. **For performance changes**: Include before/after metrics.
+9. **For coverage changes**: Include coverage % improvement.
 
-## Step 12: Push & Cleanup
+## Step 13: Push & Cleanup
 1. Push the requested changes to GitHub:
    ```bash
    git push origin feat/<feature-name>
