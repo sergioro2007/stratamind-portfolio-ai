@@ -65,19 +65,91 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
 
 **Agent should ask**: "Is this refactoring existing behavior or adding new behavior?"
 
+## Step 4.5: Test Pyramid Requirements (NEW - MANDATORY)
+
+**CRITICAL**: All features MUST have tests at multiple levels to prevent integration bugs.
+
+### Required Test Distribution:
+- **60% Unit Tests**: Test individual functions in isolation
+  - Mock external dependencies (APIs, databases, 3rd party services)
+  - Fast execution, many of these
+  - Example: `authService.login()` with mocked fetch
+
+- **30% Integration Tests**: Test YOUR services working together
+  - ❌ **DO NOT mock your own code**
+  - ✅ Only mock external APIs (Gemini, market data, etc.)
+  - ✅ **MUST verify actual API calls and headers**
+  - Example: Test `authService` + `database` correctly send `x-user-id` header
+
+- **10% E2E Tests**: Test complete user flows
+  - No mocking except external APIs
+  - Start backend server, make real calls
+  - Example: Login → Create institution → Verify it appears
+
+### Anti-Patterns to AVOID:
+❌ Mocking your own services in integration tests  
+❌ Tests that don't verify actual API behavior  
+❌ Over-mocking that hides integration bugs  
+❌ Tests that pass but don't test real scenarios  
+
+### Verification Checklist:
+Before proceeding to Step 5, ensure:
+- [ ] At least 1 integration test exists
+- [ ] Integration tests don't mock internal services
+- [ ] API contracts are tested
+- [ ] Headers/request formats are verified
+
 ## Step 5: Implementation (Agent B)
 1. Edit **ONLY** the files listed in the Allowed Files list.
 2. Make the smallest possible diff.
 3. **Do not** refactor unrelated code.
 
 ## Step 6: Test New Behavior (Agent C)
+
+### 6.1 Add/Update Tests
 1. Add new tests or update existing ones for the new feature.
-2. **Coverage Requirements**:
-   - Run `npm run test:coverage`
-   - Verify >= 50% overall project coverage (MANDATORY)
-   - Verify >= 70% coverage for critical files (App.tsx, services, utils)
-   - New code should have >= 80% coverage
-3. Run `npm run verify`.
+2. Follow Test Pyramid from Step 4.5 (60% unit, 30% integration, 10% E2E)
+
+### 6.2 Coverage Requirements
+- Run `npm run test:coverage`
+- Verify >= 50% overall project coverage (MANDATORY)
+- Verify >= 70% coverage for critical files (App.tsx, services, utils)
+- New code should have >= 80% coverage
+
+### 6.3 Integration Test Checklist (NEW - MANDATORY)
+
+**CRITICAL**: Answer YES to all questions before proceeding:
+
+- [ ] Is there at least ONE integration test that doesn't mock our services?
+- [ ] Do we test actual API calls with real headers?
+- [ ] Do we verify request/response formats match backend expectations?
+- [ ] If feature involves auth, do we test the auth flow end-to-end?
+- [ ] If feature involves database, do we verify actual queries?
+- [ ] Do integration tests verify data isolation (multiuser scenarios)?
+
+**If ANY answer is NO, add the missing integration tests before proceeding.**
+
+### 6.4 Contract Testing (NEW - For API Features)
+
+For features with frontend-backend integration:
+
+- [ ] Document the API contract (headers, body format, data types)
+- [ ] Test that frontend sends correct format (e.g., email vs UUID)
+- [ ] Test that backend expects correct format
+- [ ] Verify both sides agree on data types and field names
+- [ ] Add contract test that fails if format changes
+
+**Example Contract:**
+```yaml
+API: GET /api/portfolio
+Headers:
+  x-user-id: string (email format)
+  Example: "user@example.com"
+  NOT: UUID or numeric ID
+```
+
+### 6.5 Run Verification
+3. Run `npm run verify` - all tests must pass.
 
 ## Step 7: Coverage Verification (MANDATORY)
 **Critical**: This step cannot be skipped.
@@ -111,6 +183,40 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - Any new O(n²) operations?
    - Unnecessary re-renders?
    - Memory leaks?
+
+### 8.5 Manual Smoke Testing (NEW - MANDATORY)
+
+**CRITICAL**: Automated tests are not enough. Manually verify critical flows.
+
+#### For Authentication Features:
+- [ ] Can you log in with a test email?
+- [ ] Does the dashboard show your data?
+- [ ] Can you log out successfully?
+- [ ] Can you log in as a different user?
+- [ ] Does each user see ONLY their own data?
+
+#### For Data Isolation Features:
+- [ ] Create data as User A
+- [ ] Log out and log in as User B
+- [ ] Verify User B CANNOT see User A's data
+- [ ] Log back in as User A  
+- [ ] Verify User A's data is still there
+
+#### For API Integration:
+- [ ] Open browser DevTools → Network tab
+- [ ] Make an API call (login, load data, etc.)
+- [ ] **Verify request headers are correct** (e.g., x-user-id = email)
+- [ ] Verify response contains expected data
+- [ ] Check browser console for errors
+- [ ] Verify no race conditions or timing issues
+
+#### For UI Changes:
+- [ ] Test in different screen sizes (mobile, tablet, desktop)
+- [ ] Verify no visual regressions
+- [ ] Check loading states work correctly
+- [ ] Verify error messages are user-friendly
+
+**Document manual test results in walkthrough.md**
 
 ## Step 9: Stabilize
 1. If `npm run verify` failed in Step 6, fix the code (preferred) or tests (if behavior change was planned).
