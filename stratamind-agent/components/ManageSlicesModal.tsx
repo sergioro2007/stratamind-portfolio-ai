@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { PortfolioSlice, SliceType } from '../types';
-import { Trash2, AlertTriangle, CheckCircle, PieChart, TrendingUp, Folder, Plus, X, Edit3 } from 'lucide-react';
+import { Trash2, AlertTriangle, CheckCircle, PieChart, TrendingUp, Folder, Plus, X, Edit3, RefreshCw } from 'lucide-react';
 import TickerSearch from './TickerSearch';
 
 interface ManageSlicesModalProps {
@@ -27,10 +27,15 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
 
     // Add Slice State
     const [showAddForm, setShowAddForm] = useState(false);
+
     const [newSliceType, setNewSliceType] = useState<SliceType>(SliceType.HOLDING); // Default to HOLDING
     const [newSliceName, setNewSliceName] = useState('');
     const [newSliceSymbol, setNewSliceSymbol] = useState('');
     const [newSliceAllocation, setNewSliceAllocation] = useState('0');
+
+    // Reallocation State
+    const [reallocationMode, setReallocationMode] = useState(false);
+    const [proposedRebalance, setProposedRebalance] = useState<Array<{ id: string, targetAllocation: number }>>([]);
 
     // Validation Calculation
     const totalAllocation = useMemo(() => {
@@ -44,8 +49,57 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
     };
 
     const handleAllocationChange = (id: string, newVal: string) => {
-        const num = parseInt(newVal) || 0;
+        const num = parseFloat(newVal) || 0; // Use parseFloat for decimals
         setLocalSlices(prev => prev.map(s => s.id === id ? { ...s, targetAllocation: num } : s));
+    };
+
+    // Reallocation Helpers
+    const calculateCurrentTotal = () => {
+        return localSlices.reduce((sum, s) => sum + (s.targetAllocation || 0), 0);
+    };
+
+    const calculateProportionalRebalance = (newAllocVal: number) => {
+        if (localSlices.length === 0) return [];
+        const currentTotal = calculateCurrentTotal();
+        const remainingAllocation = 100 - newAllocVal;
+
+        if (remainingAllocation <= 0 || currentTotal === 0) return [];
+
+        const reductionFactor = remainingAllocation / currentTotal;
+        return localSlices.map(child => ({
+            id: child.id,
+            targetAllocation: Math.round(child.targetAllocation * reductionFactor * 100) / 100
+        }));
+    };
+
+    const handleNewAllocationInput = (val: string) => {
+        setNewSliceAllocation(val);
+        const numVal = parseFloat(val) || 0;
+
+        const currentTotal = calculateCurrentTotal();
+        const newTotal = currentTotal + numVal;
+
+        if (newTotal > 100) {
+            setReallocationMode(true);
+            setProposedRebalance([]);
+        } else {
+            setReallocationMode(false);
+            setProposedRebalance([]);
+        }
+    };
+
+    const handleRebalanceClick = () => {
+        const numVal = parseFloat(newSliceAllocation) || 0;
+        const rebalance = calculateProportionalRebalance(numVal);
+        setProposedRebalance(rebalance);
+    };
+
+    const applyRebalance = () => {
+        setLocalSlices(prev => prev.map(s => {
+            const update = proposedRebalance.find(r => r.id === s.id);
+            return update ? { ...s, targetAllocation: update.targetAllocation } : s;
+        }));
+        setReallocationMode(false); // Clear warning after applying
     };
 
     const handleDeleteSlice = (id: string) => {
@@ -55,7 +109,12 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
     const handleAddSliceSubmit = () => {
         if (!newSliceName.trim()) return;
         if (newSliceType === SliceType.HOLDING && !newSliceSymbol.trim()) return;
-        if (!newSliceAllocation || parseInt(newSliceAllocation) <= 0) return;
+        if (!newSliceAllocation || parseFloat(newSliceAllocation) <= 0) return;
+
+        // If we have a pending rebalance, apply it to local slices first
+        if (reallocationMode && proposedRebalance.length > 0) {
+            applyRebalance();
+        }
 
         // Create new slice and add to local state immediately
         const newSlice: PortfolioSlice = {
@@ -64,7 +123,7 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
             type: newSliceType,
             name: newSliceName,
             symbol: newSliceType === SliceType.HOLDING ? newSliceSymbol : undefined,
-            targetAllocation: parseInt(newSliceAllocation) || 0,
+            targetAllocation: parseFloat(newSliceAllocation) || 0,
             currentValue: 0,
             children: []
         };
@@ -232,6 +291,7 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
                                                 onChange={e => setNewSliceName(e.target.value)}
                                                 className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                                                 placeholder="Group name (e.g. Tech, Energy)"
+                                                data-testid="new-slice-name-input"
                                             />
                                         ) : (
                                             <TickerSearch
@@ -250,14 +310,55 @@ export const ManageSlicesModal: React.FC<ManageSlicesModalProps> = ({
                                             <input
                                                 type="number"
                                                 value={newSliceAllocation}
-                                                onChange={e => setNewSliceAllocation(e.target.value)}
+                                                onChange={e => handleNewAllocationInput(e.target.value)}
                                                 className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                                                 placeholder="Allocation %"
                                                 min="0"
                                                 max="100"
+                                                data-testid="new-slice-allocation-input"
                                             />
                                             <span className="text-slate-400 text-sm">%</span>
                                         </div>
+
+                                        {/* Reallocation Warning */}
+                                        {reallocationMode && (
+                                            <div className="p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
+                                                <p className="text-xs text-yellow-400 mb-2 flex items-center gap-2">
+                                                    <AlertTriangle className="w-3 h-3" />
+                                                    Total exceeds 100% by {Math.round((calculateCurrentTotal() + (parseFloat(newSliceAllocation) || 0) - 100) * 100) / 100}%
+                                                </p>
+
+                                                {proposedRebalance.length === 0 ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleRebalanceClick}
+                                                        className="w-full bg-yellow-600 hover:bg-yellow-500 text-white text-xs font-medium py-1.5 px-3 rounded transition-colors flex items-center justify-center gap-2"
+                                                    >
+                                                        <RefreshCw className="w-3 h-3" />
+                                                        Auto-Rebalance Proportionally
+                                                    </button>
+                                                ) : (
+                                                    <div className="space-y-2" data-testid="rebalance-proposal">
+                                                        <p className="text-xs text-slate-300 font-medium">Proposed Reallocation:</p>
+                                                        <div className="max-h-32 overflow-y-auto space-y-1">
+                                                            {localSlices.map(child => {
+                                                                const newAlloc = proposedRebalance.find(r => r.id === child.id);
+                                                                if (!newAlloc) return null;
+                                                                return (
+                                                                    <div key={child.id} className="flex items-center justify-between text-xs">
+                                                                        <span className="text-slate-400 truncate max-w-[120px]">{child.name}</span>
+                                                                        <span className="text-slate-300">
+                                                                            {child.targetAllocation}% → <span className="text-emerald-400 font-bold">{newAlloc.targetAllocation}%</span>
+                                                                        </span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                        <p className="text-xs text-emerald-400 mt-2">✓ Total will be 100% on add</p>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )}
 
                                         {/* Add Button */}
                                         <button

@@ -67,25 +67,21 @@ const PortfolioVisualizer: React.FC<Props> = ({
     const [path, setPath] = useState<PortfolioSlice[]>([rootSlice]);
     const currentView = path[path.length - 1];
 
-    // Add Slice Modal State
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [newSliceType, setNewSliceType] = useState<SliceType>(SliceType.HOLDING);
-    const [newName, setNewName] = useState('');
-    const [newSymbol, setNewSymbol] = useState('');
-    const [newAllocation, setNewAllocation] = useState(0);
+    // Manage Slices Modal State
+    const [showManageSlicesModal, setShowManageSlicesModal] = useState(false);
 
-    // Ticker validation state
-    const [validatingTicker, setValidatingTicker] = useState(false);
-    const [tickerError, setTickerError] = useState<string | null>(null);
 
-    // Allocation validation state
-    const [allocationError, setAllocationError] = useState<string | null>(null);
+
+
 
     // Internal price state for auto-fetch
     const [internalPrices, setInternalPrices] = useState<Map<string, number>>(new Map());
     const [internalLoadingPrices, setInternalLoadingPrices] = useState(false);
     const [internalPriceError, setInternalPriceError] = useState<string | null>(null);
     const [internalLastUpdate, setInternalLastUpdate] = useState<Date | null>(null);
+
+    const effectivePriceError = priceError || internalPriceError;
+    const effectiveLastUpdate = lastPriceUpdate || internalLastUpdate;
 
     // Goal Editing State
     const [isEditingPrompt, setIsEditingPrompt] = useState(false);
@@ -95,19 +91,6 @@ const PortfolioVisualizer: React.FC<Props> = ({
     const [showRenameModal, setShowRenameModal] = useState(false);
     const [renameSliceId, setRenameSliceId] = useState<string | null>(null);
     const [renameName, setRenameName] = useState('');
-
-    // Manage Slices Modal State
-    const [showManageSlicesModal, setShowManageSlicesModal] = useState(false);
-
-    // Reallocation State (NEW for flexible allocation feature)
-    const [reallocationMode, setReallocationMode] = useState(false);
-    const [proposedRebalance, setProposedRebalance] = useState<Array<{ id: string, targetAllocation: number }>>([]);
-
-    // Use internal state if prices prop not provided
-    const effectivePrices = prices.size > 0 ? prices : internalPrices;
-    const effectiveLoadingPrices = loadingPrices || internalLoadingPrices;
-    const effectivePriceError = priceError || internalPriceError;
-    const effectiveLastUpdate = lastPriceUpdate || internalLastUpdate;
 
     // Auto-fetch prices when showPrices is enabled
     useEffect(() => {
@@ -216,95 +199,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
         setPath(path.slice(0, index + 1));
     };
 
-    // === REALLOCATION HELPERS (NEW) ===
-    const calculateCurrentTotal = () => {
-        if (!currentView.children) return 0;
-        return currentView.children.reduce((sum, child) => sum + child.targetAllocation, 0);
-    };
 
-    const calculateProportionalRebalance = (desiredNewAllocation: number) => {
-        if (!currentView.children) return [];
-        const currentTotal = calculateCurrentTotal();
-        const remainingAllocation = 100 - desiredNewAllocation;
-        if (remainingAllocation <= 0 || currentTotal === 0) return [];
-        const reductionFactor = remainingAllocation / currentTotal;
-        return currentView.children.map(child => ({
-            id: child.id,
-            targetAllocation: Math.round(child.targetAllocation * reductionFactor * 100) / 100
-        }));
-    };
-
-    const handleAllocationChange = (value: number) => {
-        setNewAllocation(value);
-
-        // Validate allocation range
-        if (value <= 0 || value > 100) {
-            setAllocationError('Allocation must be between 0.01% and 100%');
-        } else {
-            setAllocationError(null);
-        }
-
-        const currentTotal = calculateCurrentTotal();
-        const newTotal = currentTotal + value;
-        if (newTotal > 100) {
-            setReallocationMode(true);
-            setProposedRebalance([]);
-        } else {
-            setReallocationMode(false);
-            setProposedRebalance([]);
-        }
-    };
-
-    const handleRebalanceClick = () => {
-        const rebalance = calculateProportionalRebalance(newAllocation);
-        setProposedRebalance(rebalance);
-    };
-
-
-    const handleAddSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Validate allocation
-        if (newAllocation <= 0 || newAllocation > 100) {
-            setAllocationError('Allocation must be between 0.01% and 100%');
-            return;
-        }
-
-        // Validate ticker for HOLDING type
-        if (newSliceType === SliceType.HOLDING && newSymbol) {
-            setValidatingTicker(true);
-            setTickerError(null);
-
-            try {
-                const isValid = await validateTicker(newSymbol);
-                setValidatingTicker(false);
-
-                if (!isValid) {
-                    setTickerError('Invalid ticker symbol. Please check and try again.');
-                    return;
-                }
-            } catch (error) {
-                setValidatingTicker(false);
-                setTickerError('Failed to validate ticker. Please try again.');
-                return;
-            }
-        }
-
-        // Proceed with adding slice
-        if (onAddSlice && newName && newAllocation > 0) {
-            // Pass rebalance updates if they exist
-            const rebalanceData = proposedRebalance.length > 0 ? proposedRebalance : undefined;
-            onAddSlice(currentView.id, newSliceType, newName, newSymbol || undefined, Number(newAllocation), rebalanceData);
-            setShowAddModal(false);
-            setNewName('');
-            setNewSymbol('');
-            setNewAllocation(0);
-            setTickerError(null);
-            setAllocationError(null);
-            setReallocationMode(false);
-            setProposedRebalance([]);
-        }
-    };
 
     const handleDelete = (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -383,22 +278,13 @@ const PortfolioVisualizer: React.FC<Props> = ({
                         </>
                     )}
                     {currentView.type === SliceType.GROUP && (
-                        <>
-                            <button
-                                onClick={() => setShowAddModal(true)}
-                                className="p-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
-                                title="Add New Slice"
-                            >
-                                <Plus className="w-3 h-3" /> Add Slice
-                            </button>
-                            <button
-                                onClick={() => setShowManageSlicesModal(true)}
-                                className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
-                                title="Manage Portfolio"
-                            >
-                                <Settings className="w-3 h-3" /> Manage
-                            </button>
-                        </>
+                        <button
+                            onClick={() => setShowManageSlicesModal(true)}
+                            className="p-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded shadow-lg transition-colors flex items-center gap-1 text-xs font-medium px-3"
+                            title="Manage Portfolio"
+                        >
+                            <Settings className="w-3 h-3" /> Manage
+                        </button>
                     )}
                 </div>
             </div>
@@ -571,156 +457,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
                 </div>
             </div>
 
-            {/* Add Slice Modal Overlay */}
-            {showAddModal && (
-                <div className="fixed inset-0 bg-slate-900/90 z-50 flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
-                    <div className="bg-slate-800 border border-slate-700 w-full max-w-sm max-h-[90vh] rounded-xl shadow-2xl flex flex-col overflow-hidden my-auto" data-testid="add-slice-modal">
-                        <div className="flex justify-between items-center p-6 pb-4 shrink-0">
-                            <h3 className="text-lg font-bold text-white">Add New Slice</h3>
-                            <button onClick={() => setShowAddModal(false)} className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
-                        </div>
-                        <form onSubmit={handleAddSubmit} className="flex flex-col flex-1 min-h-0">
-                            <div className="flex-1 overflow-y-auto px-6 pb-4 space-y-4">
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-400 mb-1">Type</label>
-                                    <div className="flex bg-slate-900 p-1 rounded-lg mb-4 border border-slate-700">
-                                        <button
-                                            type="button"
-                                            onClick={() => setNewSliceType(SliceType.HOLDING)}
-                                            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.HOLDING
-                                                ? 'bg-indigo-600 text-white shadow-lg'
-                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                                                }`}
-                                        >
-                                            <TrendingUp className="w-4 h-4 mr-2" />
-                                            Holding
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setNewSliceType(SliceType.GROUP)}
-                                            className={`flex-1 flex items-center justify-center py-2 px-4 rounded-md text-sm font-medium transition-all ${newSliceType === SliceType.GROUP
-                                                ? 'bg-indigo-600 text-white shadow-lg'
-                                                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800'
-                                                }`}
-                                        >
-                                            <Folder className="w-4 h-4 mr-2" />
-                                            Group
-                                        </button>
-                                    </div>
-                                </div>
 
-                                {newSliceType === SliceType.GROUP && (
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-slate-400 mb-1">
-                                            Name
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={newName}
-                                            onChange={(e) => setNewName(e.target.value)}
-                                            className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
-                                            placeholder="e.g. Tech Sector"
-                                        />
-                                    </div>
-                                )}
-
-                                {newSliceType === SliceType.HOLDING && (
-                                    <div className="mb-4">
-                                        <label className="block text-sm font-medium text-slate-400 mb-1">
-                                            Ticker Name/Symbol
-                                        </label>
-                                        <TickerSearch
-                                            value={newSymbol}
-                                            onChange={setNewSymbol}
-                                            onSelect={(symbol, name) => {
-                                                setNewName(name);
-                                                setNewSymbol(symbol);
-                                            }}
-                                            placeholder="e.g. AAPL or Apple"
-                                        />
-                                        {validatingTicker && (
-                                            <p data-testid="validating-ticker" className="text-xs text-indigo-400 mt-1 flex items-center">
-                                                <Loader className="w-3 h-3 mr-1 animate-spin" />
-                                                Validating ticker...
-                                            </p>
-                                        )}
-                                        {tickerError && (
-                                            <p className="text-xs text-red-500 mt-1 pl-1 bg-red-500/10 p-1 rounded border border-red-500/20">{tickerError}</p>
-                                        )}
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label htmlFor="target-allocation" className="block text-xs font-semibold text-slate-400 mb-1">Target Allocation (%)</label>
-                                    <input
-                                        id="target-allocation"
-                                        type="number"
-                                        min="0.01" max="100" step="0.01"
-                                        value={newAllocation}
-                                        onChange={(e) => handleAllocationChange(Number(e.target.value))}
-                                        className="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white focus:border-indigo-500 focus:outline-none"
-                                        required
-                                    />
-                                    {allocationError && (
-                                        <p className="text-xs text-red-500 mt-1 pl-1 bg-red-500/10 p-1 rounded border border-red-500/20">{allocationError}</p>
-                                    )}
-                                    <p className="text-[10px] text-slate-500 mt-1">Remaining allocation will be adjusted automatically or flagged.</p>
-
-                                    {/* Reallocation Warning */}
-                                    {reallocationMode && (
-                                        <div className="mt-3 p-3 border border-yellow-500/50 rounded-lg bg-yellow-500/5">
-                                            <p className="text-sm text-yellow-400 mb-2 flex items-center gap-2">
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                                </svg>
-                                                Total allocation exceeds 100% by {Math.round((calculateCurrentTotal() + newAllocation - 100) * 100) / 100}%
-                                            </p>
-
-                                            {proposedRebalance.length === 0 ? (
-                                                <button
-                                                    type="button"
-                                                    onClick={handleRebalanceClick}
-                                                    className="w-full bg-yellow-600 hover:bg-yellow-500 text-white text-sm font-medium py-2 px-3 rounded transition-colors flex items-center justify-center gap-2"
-                                                >
-                                                    <RefreshCw className="w-4 h-4" />
-                                                    Auto-Rebalance Proportionally
-                                                </button>
-                                            ) : (
-                                                <div className="space-y-2" data-testid="rebalance-proposal">
-                                                    <p className="text-xs text-slate-300 font-medium">Proposed Reallocation:</p>
-                                                    {currentView.children?.map(child => {
-                                                        const newAlloc = proposedRebalance.find(r => r.id === child.id);
-                                                        return (
-                                                            <div key={child.id} className="flex items-center justify-between text-xs">
-                                                                <span className="text-slate-400">{child.name}</span>
-                                                                <span className="text-slate-300">
-                                                                    {child.targetAllocation}% → <span className="text-green-400 font-bold">{newAlloc?.targetAllocation}%</span>
-                                                                </span>
-                                                            </div>
-                                                        );
-                                                    })}
-                                                    <p className="text-xs text-green-400 mt-2">✓ Total will be 100%</p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div className="px-6 pb-6 pt-2 shrink-0 border-t border-slate-700">
-                                <button
-                                    type="submit"
-                                    className="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                                    disabled={validatingTicker || allocationError !== null}
-                                >
-                                    {validatingTicker && <Loader className="w-4 h-4 animate-spin" />}
-                                    {validatingTicker ? 'Validating...' : 'Add Slice'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
 
             {/* Rename Slice Modal */}
             {showRenameModal && renameSliceId && (

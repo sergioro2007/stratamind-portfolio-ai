@@ -185,58 +185,63 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
     const updateSql = `UPDATE accounts SET name = ?, type = ?, total_value = ?, cash_balance = ? WHERE id = ?`;
 
     db.serialize(() => {
-        db.run('BEGIN TRANSACTION');
-
-        db.run(updateSql, [name, type, totalValue, cashBalance, id], (err) => {
+        db.run('BEGIN TRANSACTION', (err) => {
             if (err) {
-                console.error("Error updating account meta", err);
-                db.run('ROLLBACK');
-                return res.status(500).json({ error: err.message });
+                console.error("Transaction Error:", err);
+                return res.status(500).json({ error: "Transaction busy, please try again" });
             }
 
-            // 2. Wipe existing slices for this account
-            db.run(`DELETE FROM portfolio_slices WHERE account_id = ?`, [id], (err) => {
+            db.run(updateSql, [name, type, totalValue, cashBalance, id], (err) => {
                 if (err) {
-                    console.error("Error clearing slices", err);
+                    console.error("Error updating account meta", err);
                     db.run('ROLLBACK');
                     return res.status(500).json({ error: err.message });
                 }
 
-                // 3. Recursively Insert New Slices
-                const stmt = db.prepare(`INSERT INTO portfolio_slices (id, account_id, parent_id, type, name, symbol, target_allocation, current_value, strategy_prompt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
-
-                const insertSlice = (slice, parentId = null) => {
-                    stmt.run([
-                        slice.id,
-                        id,
-                        parentId,
-                        slice.type,
-                        slice.name,
-                        slice.symbol || null,
-                        slice.targetAllocation,
-                        slice.currentValue,
-                        slice.strategyPrompt || null
-                    ]);
-
-                    if (slice.children && slice.children.length > 0) {
-                        slice.children.forEach(child => insertSlice(child, slice.id));
+                // 2. Wipe existing slices for this account
+                db.run(`DELETE FROM portfolio_slices WHERE account_id = ?`, [id], (err) => {
+                    if (err) {
+                        console.error("Error clearing slices", err);
+                        db.run('ROLLBACK');
+                        return res.status(500).json({ error: err.message });
                     }
-                };
 
-                try {
-                    if (strategies && strategies.length > 0) {
-                        strategies.forEach(s => insertSlice(s));
+                    // 3. Recursively Insert New Slices
+                    const stmt = db.prepare(`INSERT INTO portfolio_slices (id, account_id, parent_id, type, name, symbol, target_allocation, current_value, strategy_prompt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
+
+                    const insertSlice = (slice, parentId = null) => {
+                        stmt.run([
+                            slice.id,
+                            id,
+                            parentId,
+                            slice.type,
+                            slice.name,
+                            slice.symbol || null,
+                            slice.targetAllocation,
+                            slice.currentValue,
+                            slice.strategyPrompt || null
+                        ]);
+
+                        if (slice.children && slice.children.length > 0) {
+                            slice.children.forEach(child => insertSlice(child, slice.id));
+                        }
+                    };
+
+                    try {
+                        if (strategies && strategies.length > 0) {
+                            strategies.forEach(s => insertSlice(s));
+                        }
+                        stmt.finalize();
+
+                        db.run('COMMIT', () => {
+                            res.json({ success: true });
+                        });
+                    } catch (insertErr) {
+                        console.error("Error inserting slices", insertErr);
+                        db.run('ROLLBACK');
+                        res.status(500).json({ error: "Failed to insert strategies" });
                     }
-                    stmt.finalize();
-
-                    db.run('COMMIT', () => {
-                        res.json({ success: true });
-                    });
-                } catch (insertErr) {
-                    console.error("Error inserting slices", insertErr);
-                    db.run('ROLLBACK');
-                    res.status(500).json({ error: "Failed to insert strategies" });
-                }
+                });
             });
         });
     });

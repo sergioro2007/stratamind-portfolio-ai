@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PortfolioVisualizer from '../../../components/PortfolioVisualizer';
 import { PortfolioSlice, SliceType } from '../../../types';
@@ -31,6 +31,7 @@ vi.mock('recharts', () => ({
  */
 describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
     const mockOnAddSlice = vi.fn();
+    const mockOnUpdateSlices = vi.fn();
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -66,14 +67,20 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
                     rootSlice={rootSlice}
                     totalValue={10000}
                     onAddSlice={mockOnAddSlice}
+                    onUpdateSlices={mockOnUpdateSlices}
                 />
             );
 
-            await user.click(screen.getByText('Add Slice'));
-            await user.click(screen.getByRole('button', { name: 'Group' }));
+            await user.click(screen.getByText('Manage'));
+            const modal = await screen.findByTestId('manage-slices-modal');
 
-            const nameInput = screen.getByPlaceholderText(/e.g. Tech Sector/i);
-            const allocationInput = screen.getByDisplayValue('0');
+            // Open Add Form in Manage Modal
+            await user.click(within(modal).getByText('Add Slice'));
+
+            await user.click(within(modal).getByRole('button', { name: 'Group' }));
+
+            const nameInput = await screen.findByTestId('new-slice-name-input');
+            const allocationInput = await screen.findByTestId('new-slice-allocation-input');
 
             await user.type(nameInput, 'New Group');
             await user.clear(allocationInput);
@@ -121,14 +128,20 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
                     rootSlice={rootSlice}
                     totalValue={10000}
                     onAddSlice={mockOnAddSlice}
+                    onUpdateSlices={mockOnUpdateSlices}
                 />
             );
 
-            await user.click(screen.getByText('Add Slice'));
-            await user.click(screen.getByRole('button', { name: 'Group' }));
+            await user.click(screen.getByText('Manage'));
+            const modal = await screen.findByTestId('manage-slices-modal');
 
-            const nameInput = screen.getByPlaceholderText(/e.g. Tech Sector/i);
-            const allocationInput = screen.getByDisplayValue('0');
+            // Open Add Form in Manage Modal
+            await user.click(within(modal).getByText('Add Slice'));
+
+            await user.click(within(modal).getByRole('button', { name: 'Group' }));
+
+            const nameInput = await screen.findByTestId('new-slice-name-input');
+            const allocationInput = await screen.findByTestId('new-slice-allocation-input');
 
             await user.type(nameInput, 'New Group');
             await user.clear(allocationInput);
@@ -175,14 +188,20 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
                     rootSlice={rootSlice}
                     totalValue={10000}
                     onAddSlice={mockOnAddSlice}
+                    onUpdateSlices={mockOnUpdateSlices}
                 />
             );
 
-            await user.click(screen.getByText('Add Slice'));
-            await user.click(screen.getByRole('button', { name: 'Group' }));
+            await user.click(screen.getByText('Manage'));
+            const modal = await screen.findByTestId('manage-slices-modal');
 
-            const nameInput = screen.getByPlaceholderText(/e.g. Tech Sector/i);
-            const allocationInput = screen.getByDisplayValue('0');
+            // Open Add Form in Manage Modal
+            await user.click(within(modal).getByText('Add Slice'));
+
+            await user.click(within(modal).getByRole('button', { name: 'Group' }));
+
+            const nameInput = await screen.findByTestId('new-slice-name-input');
+            const allocationInput = await screen.findByTestId('new-slice-allocation-input');
 
             await user.type(nameInput, 'New Group');
             await user.clear(allocationInput);
@@ -236,14 +255,20 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
                     rootSlice={rootSlice}
                     totalValue={10000}
                     onAddSlice={mockOnAddSlice}
+                    onUpdateSlices={mockOnUpdateSlices}
                 />
             );
 
-            await user.click(screen.getByText('Add Slice'));
-            await user.click(screen.getByRole('button', { name: 'Group' }));
+            await user.click(screen.getByText('Manage'));
+            const modal = await screen.findByTestId('manage-slices-modal');
 
-            const nameInput = screen.getByPlaceholderText(/e.g. Tech Sector/i);
-            const allocationInput = screen.getByDisplayValue('0');
+            // Open Add Form in Manage Modal
+            await user.click(within(modal).getByText('Add Slice'));
+
+            await user.click(within(modal).getByRole('button', { name: 'Group' }));
+
+            const nameInput = await screen.findByTestId('new-slice-name-input');
+            const allocationInput = await screen.findByTestId('new-slice-allocation-input');
 
             await user.type(nameInput, 'New Group');
             await user.clear(allocationInput);
@@ -253,22 +278,24 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
             const rebalanceBtn = await screen.findByRole('button', { name: /rebalance/i });
             await user.click(rebalanceBtn);
 
-            // Submit
-            const submitButtons = screen.getAllByRole('button', { name: /Add Slice/i });
-            const submitButton = submitButtons[submitButtons.length - 1];
-            await user.click(submitButton);
+            // Confirm Add Slice
+            const addConfirmBtn = await screen.findByRole('button', { name: /Add Slice/i });
+            await user.click(addConfirmBtn);
 
-            // EXPECTED: onAddSlice called with new slice AND rebalance updates
+            // Submit (Save Changes in Manage Modal)
+            const saveBtn = await screen.findByText('Save Changes');
+            await user.click(saveBtn);
+
+            // EXPECTED: onUpdateSlices called with updated array
             await waitFor(() => {
-                expect(mockOnAddSlice).toHaveBeenCalledWith(
+                expect(mockOnUpdateSlices).toHaveBeenCalledWith(
                     'root-1',
-                    SliceType.GROUP,
-                    'New Group',
-                    undefined,
-                    20,
+                    'Portfolio', // Name passed from currentSlice
                     expect.arrayContaining([
                         expect.objectContaining({ id: 'child-1', targetAllocation: 48 }),
-                        expect.objectContaining({ id: 'child-2', targetAllocation: 32 })
+                        expect.objectContaining({ id: 'child-2', targetAllocation: 32 }),
+                        // New slice should be here too (we don't know its generated ID easily, but we can check properties)
+                        expect.objectContaining({ name: 'New Group', targetAllocation: 20 })
                     ])
                 );
             });
@@ -302,14 +329,20 @@ describe('PortfolioVisualizer - Flexible Allocation (TDD)', () => {
                     rootSlice={rootSlice}
                     totalValue={10000}
                     onAddSlice={mockOnAddSlice}
+                    onUpdateSlices={mockOnUpdateSlices}
                 />
             );
 
-            await user.click(screen.getByText('Add Slice'));
-            await user.click(screen.getByRole('button', { name: 'Group' }));
+            await user.click(screen.getByText('Manage'));
+            const modal = await screen.findByTestId('manage-slices-modal');
 
-            const nameInput = screen.getByPlaceholderText(/e.g. Tech Sector/i);
-            const allocationInput = screen.getByDisplayValue('0');
+            // Open Add Form in Manage Modal
+            await user.click(within(modal).getByText('Add Slice'));
+
+            await user.click(within(modal).getByRole('button', { name: 'Group' }));
+
+            const nameInput = await screen.findByTestId('new-slice-name-input');
+            const allocationInput = await screen.findByTestId('new-slice-allocation-input');
 
             await user.type(nameInput, 'New Group');
             await user.clear(allocationInput);
