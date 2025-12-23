@@ -28,7 +28,10 @@ describe('Database CRUD Operations', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'http://localhost:3001/api/institutions/inst-1',
-                { method: 'DELETE' }
+                {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                }
             );
             expect(result).toHaveLength(1);
             expect(result[0].id).toBe('inst-2');
@@ -145,7 +148,10 @@ describe('Database CRUD Operations', () => {
 
             expect(mockFetch).toHaveBeenCalledWith(
                 'http://localhost:3001/api/accounts/acc-1',
-                { method: 'DELETE' }
+                {
+                    method: 'DELETE',
+                    headers: { 'Content-Type': 'application/json' }
+                }
             );
             expect(result[0].accounts).toHaveLength(0);
         });
