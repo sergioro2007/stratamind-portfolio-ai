@@ -9,7 +9,7 @@ const getAuthHeaders = () => {
     const user = getCurrentUser();
     return {
         'Content-Type': 'application/json',
-        ...(user ? { 'x-user-id': user.id } : {})
+        ...(user ? { 'x-user-id': user.email } : {})  // Send email, not id!
     };
 };
 
