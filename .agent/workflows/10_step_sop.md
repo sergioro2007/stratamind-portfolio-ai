@@ -34,7 +34,7 @@ This workflow enforces the "Behavior-Locked, Small Diffs, Always Verified" proto
    - **Invariants**: 5-10 bullets of what must NOT change.
    - **Allowed Files**: Explicit list of files to edit.
    - **Test Strategy**: Choose Characterization OR TDD (see Step 4).
-   - **Coverage Target**: Minimum coverage % for new/modified files (default: 50% overall, 70% for critical files).
+   - **Coverage Target**: Minimum coverage % for new/modified files (default: 50% overall, 70% for critical files, NO file < 50%).
    - **Rollback Plan**.
 3. Ask User for approval of the plan.
 
@@ -114,6 +114,7 @@ Before proceeding to Step 5, ensure:
 - Run `npm run test:coverage`
 - Verify >= 50% overall project coverage (MANDATORY)
 - Verify >= 70% coverage for critical files (App.tsx, services, utils)
+- Verify >= 50% coverage for ALL files (no file < 50%)
 - New code should have >= 80% coverage
 
 ### 6.3 Integration Test Checklist (NEW - MANDATORY)
@@ -175,6 +176,7 @@ Headers:
    - ✅ Modified files coverage >= baseline (no regression)
    - ✅ New files coverage >= 70%
    - ✅ Critical files (services, utils) >= 70%
+   - ✅ All files >= 50% (no single file below 50%)
 
 3. **If coverage drops below threshold**:
    - Add targeted unit/integration tests
@@ -275,6 +277,7 @@ Headers:
 |--------|-----------|-----------------|
 | Overall Coverage | >= 50% | Block merge, add tests |
 | Critical Files | >= 70% | Block merge, add tests |
+| All Files | >= 50% | Block merge, add tests |
 | New Code | >= 80% | Block merge, add tests |
 | Coverage Delta | >= 0% | No regression allowed |
 
