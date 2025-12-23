@@ -243,24 +243,8 @@ export const fetchHistoricalData = async (symbol: string): Promise<HistoricalDat
         historyCache.set(symbol, { data: points, timestamp: Date.now() });
         return points;
     } catch (error) {
-        console.warn("Historical fetch error, falling back to mock data:", error);
-
-        // Mock Data Fallback for Development (SPY-like)
-        if (symbol === 'SPY') {
-            const now = Date.now();
-            const points: HistoricalDataPoint[] = [];
-            let price = 450;
-            for (let i = 365; i >= 0; i--) {
-                const date = new Date(now - i * 86400000);
-                // Random walk with drift
-                price = price * (1 + (Math.random() * 0.02 - 0.009));
-                points.push({
-                    time: date.getTime(),
-                    close: price
-                });
-            }
-            return points;
-        }
+        console.warn("Historical fetch error:", error);
+        // NO MOCK FALLBACK - Return empty to verify real data only
         return [];
     }
 };

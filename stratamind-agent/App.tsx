@@ -248,7 +248,7 @@ function App() {
                 if (validHistory && validHistory.length > 0) {
                     setFullHistory(validHistory);
                 } else {
-                    setFullHistory(MOCK_HISTORY);
+                    setFullHistory([]);
                 }
 
                 // 3. Fetch Benchmark (SPY) if not loaded
@@ -263,9 +263,9 @@ function App() {
                 }
 
             } catch (err) {
-                console.error("Failed to load performance data, using mock data", err);
-                setFullHistory(MOCK_HISTORY);
-                setPerformanceStats(MOCK_STATS);
+                console.error("Failed to load performance data", err);
+                setFullHistory([]);
+                setPerformanceStats(null);
             } finally {
                 setIsPerformanceLoading(false);
             }
