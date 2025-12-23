@@ -38,7 +38,14 @@ export const PerformanceChart: React.FC<PerformanceChartProps> = ({
     };
 
     const formatDate = (timestamp: number) => {
-        return new Date(timestamp).toLocaleDateString(undefined, {
+        const date = new Date(timestamp);
+        if (timeRange === '1D') {
+            return date.toLocaleTimeString(undefined, {
+                hour: 'numeric',
+                minute: '2-digit'
+            });
+        }
+        return date.toLocaleDateString(undefined, {
             month: 'short',
             day: 'numeric'
         });

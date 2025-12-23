@@ -18,71 +18,7 @@ import { filterByTimeRange } from './src/services/performanceService';
 import { isAuthenticated, getCurrentUser, logout } from './services/authService';
 import LoginPage from './components/LoginPage';
 
-// --- MOCK DATA FOR VISUALIZATION ---
-// --- MOCK DATA FOR VISUALIZATION ---
-const MOCK_HISTORY: PerformanceSnapshot[] = (() => {
-    const history: PerformanceSnapshot[] = [];
-    const baseValue = 100000;
-    const volatility = 0.02;
-    const now = Date.now();
-    const DAY_MS = 24 * 60 * 60 * 1000;
-    const HOUR_MS = 60 * 60 * 1000;
 
-    // 1. Generate Daily Data for past 30 days (excluding today)
-    for (let i = 29; i > 0; i--) {
-        const time = now - (i * DAY_MS);
-        const progress = (30 - i) / 30; // 0 to 1
-        // Random walk trend
-        const value = baseValue * (1 + (Math.sin(progress * Math.PI) * 0.1) + (Math.random() * volatility - volatility / 2));
-
-        history.push({
-            id: `mock-day-${i}`,
-            timestamp: time,
-            accountId: 'mock-acc',
-            totalValue: value,
-            cashBalance: value * 0.1,
-            holdingsValue: value * 0.9,
-            dayChange: 0,
-            dayChangePercent: 0
-        });
-    }
-
-    // 2. Generate Hourly Data for the last 24 hours (Intraday)
-    // Start from the last daily value or base
-    let lastValue = history.length > 0 ? history[history.length - 1].totalValue : baseValue;
-
-    for (let i = 24; i >= 0; i--) {
-        const time = now - (i * HOUR_MS);
-        // Micro-movements
-        const change = lastValue * ((Math.random() - 0.5) * 0.005);
-        lastValue += change;
-
-        history.push({
-            id: `mock-hour-${i}`,
-            timestamp: time,
-            accountId: 'mock-acc',
-            totalValue: lastValue,
-            cashBalance: lastValue * 0.1,
-            holdingsValue: lastValue * 0.9,
-            dayChange: change, // approximation
-            dayChangePercent: (change / lastValue) * 100
-        });
-    }
-
-    return history.sort((a, b) => a.timestamp - b.timestamp);
-})();
-
-const MOCK_STATS: PerformanceStats = {
-    current: 112500,
-    dayChange: 1250,
-    dayChangePercent: 1.12,
-    weekChange: 3500,
-    weekChangePercent: 3.2,
-    monthChange: 12500,
-    monthChangePercent: 12.5,
-    allTimeHigh: 115000,
-    allTimeLow: 95000
-};
 
 function App() {
     // -------------------------------------------------------------------------
@@ -1469,7 +1405,7 @@ function App() {
                             <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-6 mb-6">
                                 <div className="lg:col-span-2 xl:col-span-1 2xl:col-span-2">
                                     <PerformanceChart
-                                        history={performanceHistory.length > 0 ? performanceHistory : MOCK_HISTORY}
+                                        history={performanceHistory}
                                         timeRange={timeRange}
                                         onTimeRangeChange={setTimeRange}
                                         historyLoading={isPerformanceLoading}
@@ -1479,9 +1415,9 @@ function App() {
                                     />
                                 </div>
                                 <div className="h-full">
-                                    {(performanceStats || MOCK_STATS) && (
+                                    {performanceStats && (
                                         <PerformanceStatsDisplay
-                                            stats={performanceStats || MOCK_STATS}
+                                            stats={performanceStats}
                                             statsLoading={isPerformanceLoading}
                                         />
                                     )}
