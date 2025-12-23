@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import db from './db.js';
 import { v4 as uuidv4 } from 'uuid';
+import { loginUser, requireAuth, getCurrentUser } from './auth.js';
 
 const app = express();
 const PORT = 3001;
@@ -24,11 +25,29 @@ db.serialize(() => {
     db.run(`CREATE INDEX IF NOT EXISTS idx_snapshots_account_time ON performance_snapshots(account_id, timestamp)`);
 });
 
-// --- ROUTES ---
+// --- AUTH ROUTES ---
+
+// POST /api/auth/login
+app.post('/api/auth/login', (req, res) => {
+    const { email } = req.body;
+    loginUser(email, (err, user) => {
+        if (err) return res.status(400).json({ error: err.message });
+        res.json(user);
+    });
+});
+
+// GET /api/auth/me
+app.get('/api/auth/me', requireAuth, (req, res) => {
+    const userId = getCurrentUser(req);
+    res.json({ userId });
+});
+
+// --- PORTFOLIO ROUTES (Protected) ---
 
 // GET /api/portfolio
 // Returns the full tree of Institutions -> Accounts -> Strategies
-app.get('/api/portfolio', (req, res) => {
+app.get('/api/portfolio', requireAuth, (req, res) => {
+    const userId = getCurrentUser(req);
     const sql = `
         SELECT 
             i.id as inst_id, i.name as inst_name,
@@ -53,8 +72,8 @@ app.get('/api/portfolio', (req, res) => {
 
         // Actually, let's just use separate queries for clarity in this phase
         // Use separate queries to build the tree
-        // Fetch Institutions
-        db.all("SELECT * FROM institutions", [], (err, insts) => {
+        // Fetch Institutions (filtered by user)
+        db.all("SELECT * FROM institutions WHERE user_id = ?", [userId], (err, insts) => {
             if (err) return res.status(500).json({ error: err.message });
 
             let completed = 0;
@@ -137,19 +156,20 @@ app.get('/api/portfolio', (req, res) => {
 });
 
 // POST /api/institutions
-app.post('/api/institutions', (req, res) => {
-    const { name, user_id = 'default_user' } = req.body;
+app.post('/api/institutions', requireAuth, (req, res) => {
+    const { name } = req.body;
+    const userId = getCurrentUser(req);
     const id = uuidv4();
     const sql = `INSERT INTO institutions (id, user_id, name) VALUES (?, ?, ?)`;
-    db.run(sql, [id, user_id, name], (err) => {
+    db.run(sql, [id, userId, name], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ id, name });
     });
 });
 
 // POST /api/accounts
-app.post('/api/accounts', (req, res) => {
-    const { institutionId, name, type, user_id = 'default_user' } = req.body;
+app.post('/api/accounts', requireAuth, (req, res) => {
+    const { institutionId, name, type } = req.body;
     const id = uuidv4();
     const sql = `INSERT INTO accounts (id, institution_id, name, type, cash_balance) VALUES (?, ?, ?, ?, ?)`;
     db.run(sql, [id, institutionId, name, type, 0], (err) => {
@@ -159,7 +179,7 @@ app.post('/api/accounts', (req, res) => {
 });
 
 // PUT /api/institutions/:id (Rename)
-app.put('/api/institutions/:id', (req, res) => {
+app.put('/api/institutions/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     const { name } = req.body;
     db.run("UPDATE institutions SET name = ? WHERE id = ?", [name, id], (err) => {
@@ -170,7 +190,7 @@ app.put('/api/institutions/:id', (req, res) => {
 
 // PUT /api/accounts/:id (Deep Update)
 // Expects: { name, type, totalValue, cashBalance, strategies: [ ...tree... ] }
-app.put('/api/accounts/:id', (req, res) => {
+app.put('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     const { name, type, totalValue, cashBalance, strategies } = req.body;
 
@@ -236,7 +256,7 @@ app.put('/api/accounts/:id', (req, res) => {
 });
 
 // DELETE /api/institutions/:id
-app.delete('/api/institutions/:id', (req, res) => {
+app.delete('/api/institutions/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     db.run("DELETE FROM institutions WHERE id = ?", [id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -245,7 +265,7 @@ app.delete('/api/institutions/:id', (req, res) => {
 });
 
 // DELETE /api/accounts/:id
-app.delete('/api/accounts/:id', (req, res) => {
+app.delete('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     db.run("DELETE FROM accounts WHERE id = ?", [id], (err) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -268,7 +288,7 @@ setInterval(() => { }, 10000);
 
 // POST /api/performance/snapshot
 // Record a performance snapshot
-app.post('/api/performance/snapshot', (req, res) => {
+app.post('/api/performance/snapshot', requireAuth, (req, res) => {
     const { accountId, totalValue, cashBalance, holdingsValue, dayChange, dayChangePercent } = req.body;
     const id = uuidv4();
     const timestamp = Date.now();
@@ -285,7 +305,7 @@ app.post('/api/performance/snapshot', (req, res) => {
 
 // GET /api/performance/:accountId
 // Get performance history for an account
-app.get('/api/performance/:accountId', (req, res) => {
+app.get('/api/performance/:accountId', requireAuth, (req, res) => {
     const { accountId } = req.params;
     const { range } = req.query; // Optional time range filter
 
@@ -312,7 +332,7 @@ app.get('/api/performance/:accountId', (req, res) => {
 
 // GET /api/performance/:accountId/stats
 // Get performance statistics for an account
-app.get('/api/performance/:accountId/stats', (req, res) => {
+app.get('/api/performance/:accountId/stats', requireAuth, (req, res) => {
     const { accountId } = req.params;
 
     const sql = `SELECT * FROM performance_snapshots WHERE account_id = ? ORDER BY timestamp ASC`;

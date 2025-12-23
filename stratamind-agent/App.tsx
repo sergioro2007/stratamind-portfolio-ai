@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Layout, DollarSign, Plus, Settings, ChevronRight, Send, Loader2, Pencil, Trash2, PieChart, TrendingUp, Shield, Menu, X, Activity, MessageSquare } from 'lucide-react';
+import { Layout, DollarSign, Plus, Settings, ChevronRight, Send, Loader2, Pencil, Trash2, PieChart, TrendingUp, Shield, Menu, X, Activity, MessageSquare, LogOut, User } from 'lucide-react';
 import PortfolioVisualizer from './components/PortfolioVisualizer';
 import { PortfolioSlice, Account, Institution, SliceType } from './types';
 import { db } from './services/database';
@@ -15,6 +15,8 @@ import { PerformanceStatsDisplay } from './components/PerformanceStats';
 import { PerformanceSnapshot, PerformanceStats, TimeRange } from './types';
 import { fetchHistoricalData } from './services/marketData';
 import { filterByTimeRange } from './src/services/performanceService';
+import { isAuthenticated, getCurrentUser, logout } from './services/authService';
+import LoginPage from './components/LoginPage';
 
 // --- MOCK DATA FOR VISUALIZATION ---
 // --- MOCK DATA FOR VISUALIZATION ---
@@ -83,6 +85,36 @@ const MOCK_STATS: PerformanceStats = {
 };
 
 function App() {
+    // -------------------------------------------------------------------------
+    // STATE: Authentication
+    // -------------------------------------------------------------------------
+    const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
+    const currentUser = getCurrentUser();
+
+    // Check authentication on mount
+    useEffect(() => {
+        setIsLoggedIn(isAuthenticated());
+    }, []);
+
+    const handleLogin = () => {
+        setIsLoggedIn(true);
+    };
+
+    const handleLogout = () => {
+        logout();
+        setIsLoggedIn(false);
+        // Clear portfolio data
+        setInstitutions([]);
+        setActiveInstitutionId(null);
+        setActiveAccountId(null);
+        setSelectedStrategyId(null);
+    };
+
+    // Show login page if not authenticated
+    if (!isLoggedIn) {
+        return <LoginPage onLoginSuccess={handleLogin} />;
+    }
+
     // -------------------------------------------------------------------------
     // STATE: Data Model
     // -------------------------------------------------------------------------
@@ -1354,6 +1386,20 @@ function App() {
 
                             {/* Header Actions */}
                             <div className="flex items-center gap-3">
+                                {/* User Info */}
+                                {currentUser && (
+                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                                        <User className="w-4 h-4 text-slate-400" />
+                                        <span className="text-sm text-slate-300">{currentUser.email}</span>
+                                        <button
+                                            onClick={handleLogout}
+                                            className="ml-1 p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                            title="Logout"
+                                        >
+                                            <LogOut className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                )}
                                 <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium flex items-center gap-2 select-none cursor-help" title="AI Assistant is ready to help">
                                     <span className="relative flex h-2 w-2">
                                         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>

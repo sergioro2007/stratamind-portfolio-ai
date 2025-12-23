@@ -1,7 +1,17 @@
 import { Institution, Account, SliceType, PortfolioSlice } from '../types';
 import { normalizeChildren } from '../utils/portfolioTree';
+import { getCurrentUser } from './authService';
 
 const API_BASE = 'http://localhost:3001/api';
+
+// Helper to get auth headers
+const getAuthHeaders = () => {
+    const user = getCurrentUser();
+    return {
+        'Content-Type': 'application/json',
+        ...(user ? { 'x-user-id': user.id } : {})
+    };
+};
 
 // Helper to handle API errors
 const handleResponse = async (response: Response) => {
@@ -19,7 +29,9 @@ export const generateId = (): string => {
 export const db = {
     load: async (): Promise<Institution[]> => {
         try {
-            const response = await fetch(`${API_BASE}/portfolio`);
+            const response = await fetch(`${API_BASE}/portfolio`, {
+                headers: getAuthHeaders()
+            });
             const data = await handleResponse(response);
             return data;
         } catch (e) {
@@ -48,7 +60,7 @@ export const db = {
     createInstitution: async (name: string): Promise<Institution[]> => {
         const response = await fetch(`${API_BASE}/institutions`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name })
         });
         await handleResponse(response);
@@ -56,7 +68,10 @@ export const db = {
     },
 
     deleteInstitution: async (id: string): Promise<Institution[]> => {
-        const response = await fetch(`${API_BASE}/institutions/${id}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE}/institutions/${id}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
         await handleResponse(response);
         return db.load();
     },
@@ -64,7 +79,7 @@ export const db = {
     createAccount: async (instId: string, name: string, type: string): Promise<Institution[]> => {
         const response = await fetch(`${API_BASE}/accounts`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ institutionId: instId, name, type })
         });
         await handleResponse(response);
@@ -72,7 +87,10 @@ export const db = {
     },
 
     deleteAccount: async (instId: string, accId: string): Promise<Institution[]> => {
-        const response = await fetch(`${API_BASE}/accounts/${accId}`, { method: 'DELETE' });
+        const response = await fetch(`${API_BASE}/accounts/${accId}`, {
+            method: 'DELETE',
+            headers: getAuthHeaders()
+        });
         await handleResponse(response);
         return db.load();
     },
@@ -80,7 +98,7 @@ export const db = {
     updateInstitution: async (id: string, name: string): Promise<Institution[]> => {
         const response = await fetch(`${API_BASE}/institutions/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name })
         });
         await handleResponse(response);
@@ -110,7 +128,7 @@ export const db = {
             const merged = { ...acc, ...details };
             const response = await fetch(`${API_BASE}/accounts/${accId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(merged)
             });
             await handleResponse(response);
@@ -128,7 +146,7 @@ export const db = {
             const merged = { ...acc, strategies: updatedStrategies };
             await fetch(`${API_BASE}/accounts/${accId}`, {
                 method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
+                headers: getAuthHeaders(),
                 body: JSON.stringify(merged)
             });
         }
@@ -140,7 +158,7 @@ export const db = {
     recordPerformanceSnapshot: async (snapshot: Omit<import('../types').PerformanceSnapshot, 'id'>): Promise<void> => {
         await fetch(`${API_BASE}/performance/snapshot`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),
             body: JSON.stringify(snapshot)
         });
     },
@@ -150,12 +168,16 @@ export const db = {
         if (timeRange) {
             url.searchParams.append('range', timeRange);
         }
-        const response = await fetch(url.toString());
+        const response = await fetch(url.toString(), {
+            headers: getAuthHeaders()
+        });
         return handleResponse(response);
     },
 
     getPerformanceStats: async (accountId: string): Promise<import('../types').PerformanceStats> => {
-        const response = await fetch(`${API_BASE}/performance/${accountId}/stats`);
+        const response = await fetch(`${API_BASE}/performance/${accountId}/stats`, {
+            headers: getAuthHeaders()
+        });
         return handleResponse(response);
     }
 };
