@@ -1361,180 +1361,188 @@ function App() {
                 flex-1 flex flex-col overflow-hidden relative bg-slate-950
                 ${isChatOpen ? 'lg:pr-96 xl:pr-0' : ''}
             `}>
-                {activeAccount ? (
-                    <>
-                        {/* Streamlined Header without Strategy Tabs */}
-                        <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md sticky top-0 z-20 gap-4">
-                            <div className="flex flex-col min-w-0 flex-1">
-                                <h1 className="text-lg font-bold text-white flex items-center gap-2 overflow-hidden">
-                                    {activeStrategy ? (
-                                        <div className="flex items-center gap-2 truncate">
-                                            <span className="text-slate-400 font-normal shrink-0">{activeAccount.name}</span>
-                                            <span className="text-slate-600">/</span>
-                                            <span className="truncate">{activeStrategy.name}</span>
-                                        </div>
-                                    ) : (
-                                        <span className="truncate">{activeAccount.name}</span>
-                                    )}
-                                </h1>
-                                <div className="flex items-center gap-4 text-xs font-mono mt-0.5 truncate">
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        <span className="text-3xl font-bold text-white tracking-tight">
-                                            ${activeAccount.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                                        </span>
+                {/* Streamlined Header - Always Visible */}
+                <header className="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-900/50 backdrop-blur-md sticky top-0 z-20 gap-4">
+                    <div className="flex flex-col min-w-0 flex-1">
+                        <h1 className="text-lg font-bold text-white flex items-center gap-2 overflow-hidden">
+                            {activeAccount ? (
+                                activeStrategy ? (
+                                    <div className="flex items-center gap-2 truncate">
+                                        <span className="text-slate-400 font-normal shrink-0">{activeAccount.name}</span>
+                                        <span className="text-slate-600">/</span>
+                                        <span className="truncate">{activeStrategy.name}</span>
                                     </div>
-                                    <div className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
-                                    <div className="flex items-center gap-1.5 group shrink-0">
-                                        <span className="text-slate-500">CASH:</span>
-                                        <span className="text-emerald-400 font-bold">${activeAccount.cashBalance.toLocaleString()}</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Header Actions */}
-                            <div className="flex items-center gap-3">
-                                {/* User Info */}
-                                {currentUser && (
-                                    <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
-                                        <User className="w-4 h-4 text-slate-400" />
-                                        <span className="text-sm text-slate-300">{currentUser.email}</span>
-                                        <button
-                                            onClick={handleLogout}
-                                            className="ml-1 p-1 text-slate-400 hover:text-red-400 transition-colors"
-                                            title="Logout"
-                                        >
-                                            <LogOut className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                )}
-                                <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium flex items-center gap-2 select-none cursor-help" title="AI Assistant is ready to help">
-                                    <span className="relative flex h-2 w-2">
-                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                                ) : (
+                                    <span className="truncate">{activeAccount.name}</span>
+                                )
+                            ) : (
+                                <span className="truncate text-indigo-400">StrataMind Portfolio</span>
+                            )}
+                        </h1>
+                        {activeAccount && (
+                            <div className="flex items-center gap-4 text-xs font-mono mt-0.5 truncate">
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <span className="text-3xl font-bold text-white tracking-tight">
+                                        ${activeAccount.totalValue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                     </span>
-                                    AI Agent Ready
                                 </div>
+                                <div className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
+                                <div className="flex items-center gap-1.5 group shrink-0">
+                                    <span className="text-slate-500">CASH:</span>
+                                    <span className="text-emerald-400 font-bold">${activeAccount.cashBalance.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Header Actions */}
+                    <div className="flex items-center gap-3">
+                        {/* User Info */}
+                        {isLoggedIn && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800/50 border border-slate-700/50">
+                                <User className="w-4 h-4 text-slate-400" />
+                                <span className="text-sm text-slate-300">{currentUser?.email || 'User'}</span>
                                 <button
-                                    onClick={() => setChatOpen(!isChatOpen)}
-                                    className={`p-2 rounded-lg transition-colors xl:hidden ${isChatOpen ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
-                                    title="Toggle Chat"
+                                    onClick={handleLogout}
+                                    className="ml-1 p-1 text-slate-400 hover:text-red-400 transition-colors"
+                                    title="Logout"
                                 >
-                                    <MessageSquare className="w-5 h-5" />
-                                </button>
-                                <button
-                                    onClick={(e) => activeAccount && activeInstitution && handleOpenSettings(e, activeInstitution.id, activeAccount.id)}
-                                    className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
-                                    title="Account Settings"
-                                    data-testid="account-settings-button"
-                                >
-                                    <Settings className="w-5 h-5" />
+                                    <LogOut className="w-4 h-4" />
                                 </button>
                             </div>
-                        </header>
+                        )}
+                        <div className="px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-medium flex items-center gap-2 select-none cursor-help" title="AI Assistant is ready to help">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                            </span>
+                            AI Agent Ready
+                        </div>
+                        <button
+                            onClick={() => setChatOpen(!isChatOpen)}
+                            className={`p-2 rounded-lg transition-colors xl:hidden ${isChatOpen ? 'text-indigo-400 bg-indigo-500/10' : 'text-slate-400 hover:text-white hover:bg-slate-800'}`}
+                            title="Toggle Chat"
+                        >
+                            <MessageSquare className="w-5 h-5" />
+                        </button>
+                        <button
+                            onClick={(e) => activeAccount && activeInstitution && handleOpenSettings(e, activeInstitution.id, activeAccount.id)}
+                            className={`p-2 rounded-lg transition-colors ${activeAccount ? 'text-slate-400 hover:text-white hover:bg-slate-800' : 'text-slate-700 cursor-not-allowed'}`}
+                            title="Account Settings"
+                            disabled={!activeAccount}
+                            data-testid="account-settings-button"
+                        >
+                            <Settings className="w-5 h-5" />
+                        </button>
+                    </div>
+                </header>
 
-                        <main className="flex-1 flex flex-col xl:flex-row overflow-hidden relative">
-                            <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
-                                {/* Performance Section */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-6 mb-6">
-                                    <div className="lg:col-span-2 xl:col-span-1 2xl:col-span-2">
-                                        <PerformanceChart
-                                            history={performanceHistory.length > 0 ? performanceHistory : MOCK_HISTORY}
-                                            timeRange={timeRange}
-                                            onTimeRangeChange={setTimeRange}
-                                            historyLoading={isPerformanceLoading}
-                                            benchmarkHistory={benchmarkHistory}
-                                            showBenchmark={showBenchmark}
-                                            onToggleBenchmark={setShowBenchmark}
+                {/* Main Content Area - Conditionally Rendered */}
+                {activeAccount ? (
+
+                    <main className="flex-1 flex flex-col xl:flex-row overflow-hidden relative">
+                        <div className="flex-1 p-4 md:p-6 overflow-y-auto space-y-6">
+                            {/* Performance Section */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-6 mb-6">
+                                <div className="lg:col-span-2 xl:col-span-1 2xl:col-span-2">
+                                    <PerformanceChart
+                                        history={performanceHistory.length > 0 ? performanceHistory : MOCK_HISTORY}
+                                        timeRange={timeRange}
+                                        onTimeRangeChange={setTimeRange}
+                                        historyLoading={isPerformanceLoading}
+                                        benchmarkHistory={benchmarkHistory}
+                                        showBenchmark={showBenchmark}
+                                        onToggleBenchmark={setShowBenchmark}
+                                    />
+                                </div>
+                                <div className="h-full">
+                                    {(performanceStats || MOCK_STATS) && (
+                                        <PerformanceStatsDisplay
+                                            stats={performanceStats || MOCK_STATS}
+                                            statsLoading={isPerformanceLoading}
                                         />
-                                    </div>
-                                    <div className="h-full">
-                                        {(performanceStats || MOCK_STATS) && (
-                                            <PerformanceStatsDisplay
-                                                stats={performanceStats || MOCK_STATS}
-                                                statsLoading={isPerformanceLoading}
-                                            />
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Stats Grid */}
+                            <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-4">
+                                <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+                                    <p className="text-xs text-slate-400 uppercase">Cash Available</p>
+                                    <div className="flex items-center gap-2 mt-1">
+                                        {activeStrategy ? (
+                                            <div className="flex flex-col">
+                                                <p className="text-lg font-bold text-emerald-400">
+                                                    ${((activeAccount.cashBalance * (activeStrategy.targetAllocation / 100)) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                                                </p>
+                                                <p className="text-[10px] text-slate-500">
+                                                    ({activeStrategy.targetAllocation}% of Global Cash)
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <p className="text-lg font-bold text-white">${activeAccount.cashBalance.toLocaleString()}</p>
                                         )}
                                     </div>
                                 </div>
-
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-1 lg:grid-cols-3 xl:grid-cols-1 2xl:grid-cols-3 gap-4">
-                                    <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
-                                        <p className="text-xs text-slate-400 uppercase">Cash Available</p>
-                                        <div className="flex items-center gap-2 mt-1">
-                                            {activeStrategy ? (
-                                                <div className="flex flex-col">
-                                                    <p className="text-lg font-bold text-emerald-400">
-                                                        ${((activeAccount.cashBalance * (activeStrategy.targetAllocation / 100)) || 0).toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                                                    </p>
-                                                    <p className="text-[10px] text-slate-500">
-                                                        ({activeStrategy.targetAllocation}% of Global Cash)
-                                                    </p>
-                                                </div>
-                                            ) : (
-                                                <p className="text-lg font-bold text-white">${activeAccount.cashBalance.toLocaleString()}</p>
-                                            )}
-                                        </div>
-                                    </div>
-                                    <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
-                                        <p className="text-xs text-slate-400 uppercase">Active Strategy</p>
-                                        <p className="text-lg font-bold text-indigo-400 mt-1">{activeStrategy?.name || 'None'}</p>
-                                    </div>
-                                    <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
-                                        <p className="text-xs text-slate-400 uppercase">Holdings Count</p>
-                                        <p className="text-lg font-bold text-slate-200 mt-1">
-                                            {/* Simple recursive count would go here, simplified for demo */}
-                                            {activeStrategy?.children?.length || 0} Sectors
-                                        </p>
-                                    </div>
+                                <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+                                    <p className="text-xs text-slate-400 uppercase">Active Strategy</p>
+                                    <p className="text-lg font-bold text-indigo-400 mt-1">{activeStrategy?.name || 'None'}</p>
                                 </div>
-
-                                {/* Pie Visualizer */}
-                                <div className="min-h-[600px]">
-                                    {activeStrategy ? (
-                                        <PortfolioVisualizer
-                                            rootSlice={activeStrategy}
-                                            totalValue={(activeAccount.totalValue - activeAccount.cashBalance) * (activeStrategy.targetAllocation / 100)} // Prorated Investing Power
-                                            onAddSlice={handleAddSliceWithRebalance}
-                                            onUpdate={(updated) => { /* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
-                                            onRenameSlice={handleRenameSlice}
-                                            onRemoveSlice={handleRemoveSlice}
-                                            onUpdatePrompt={handleUpdatePrompt}
-                                        />
-                                    ) : (
-                                        <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
-                                            <PieChart className="w-12 h-12 opacity-50" />
-                                            <p>Select a strategy from the sidebar to view details</p>
-                                        </div>
-                                    )}
+                                <div className="bg-slate-800/50 border border-slate-700 p-4 rounded-xl">
+                                    <p className="text-xs text-slate-400 uppercase">Holdings Count</p>
+                                    <p className="text-lg font-bold text-slate-200 mt-1">
+                                        {/* Simple recursive count would go here, simplified for demo */}
+                                        {activeStrategy?.children?.length || 0} Sectors
+                                    </p>
                                 </div>
                             </div>
 
-                            {/* Chat Panel - Responsive */}
-                            <div className={`
+                            {/* Pie Visualizer */}
+                            <div className="min-h-[600px]">
+                                {activeStrategy ? (
+                                    <PortfolioVisualizer
+                                        rootSlice={activeStrategy}
+                                        totalValue={(activeAccount.totalValue - activeAccount.cashBalance) * (activeStrategy.targetAllocation / 100)} // Prorated Investing Power
+                                        onAddSlice={handleAddSliceWithRebalance}
+                                        onUpdate={(updated) => { /* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
+                                        onRenameSlice={handleRenameSlice}
+                                        onRemoveSlice={handleRemoveSlice}
+                                        onUpdatePrompt={handleUpdatePrompt}
+                                    />
+                                ) : (
+                                    <div className="h-full flex flex-col items-center justify-center text-slate-500 space-y-4">
+                                        <PieChart className="w-12 h-12 opacity-50" />
+                                        <p>Select a strategy from the sidebar to view details</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Chat Panel - Responsive */}
+                        <div className={`
                                 fixed inset-y-0 right-0 w-96 bg-slate-900 border-l border-slate-800 shadow-2xl z-40 transform transition-transform duration-300 ease-in-out
                                 xl:relative xl:transform-none xl:w-96 xl:translate-x-0
                                 ${isChatOpen ? 'translate-x-0' : 'translate-x-full'}
                             `}>
-                                {/* Mobile Header for Chat */}
-                                <div className="xl:hidden flex items-center justify-between p-4 border-b border-slate-800">
-                                    <h3 className="font-bold text-white">AI Assistant</h3>
-                                    <button onClick={() => setChatOpen(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full">
-                                        <X className="w-5 h-5" />
-                                    </button>
-                                </div>
-                                <div className="h-full xl:h-auto flex-1 flex flex-col">
-                                    <ChatPanel
-                                        messages={chatMessages}
-                                        onSendMessage={handleSendMessage}
-                                        pendingProposal={pendingProposal}
-                                        onApproveProposal={handleApproveProposal}
-                                        onRejectProposal={handleRejectProposal}
-                                        isTyping={isTyping}
-                                    />
-                                </div>
+                            {/* Mobile Header for Chat */}
+                            <div className="xl:hidden flex items-center justify-between p-4 border-b border-slate-800">
+                                <h3 className="font-bold text-white">AI Assistant</h3>
+                                <button onClick={() => setChatOpen(false)} className="p-2 text-slate-400 hover:text-white bg-slate-800 rounded-full">
+                                    <X className="w-5 h-5" />
+                                </button>
                             </div>
-                        </main>                    </>
+                            <div className="h-full xl:h-auto flex-1 flex flex-col">
+                                <ChatPanel
+                                    messages={chatMessages}
+                                    onSendMessage={handleSendMessage}
+                                    pendingProposal={pendingProposal}
+                                    onApproveProposal={handleApproveProposal}
+                                    onRejectProposal={handleRejectProposal}
+                                    isTyping={isTyping}
+                                />
+                            </div>
+                        </div>
+                    </main>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-slate-500 space-y-4">
                         <Activity className="w-16 h-16 opacity-30" />
