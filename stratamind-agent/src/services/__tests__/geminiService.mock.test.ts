@@ -42,6 +42,6 @@ describe('Gemini Service - Mocked', () => {
         delete process.env.API_KEY;
         const session = startChatSession();
         const result = await session.sendMessage({ message: 'test' });
-        expect(result.response.text()).toContain('unavailable');
+        expect((result as any).response.text()).toContain('unavailable');
     });
 });
