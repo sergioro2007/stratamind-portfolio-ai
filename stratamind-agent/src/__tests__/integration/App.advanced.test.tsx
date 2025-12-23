@@ -119,6 +119,14 @@ vi.mock('recharts', () => ({
     CartesianGrid: () => <div className="recharts-cartesian-grid" />,
 }));
 
+// Mock auth service - ensure tests run with authenticated user 
+vi.mock('../../../services/authService', () => ({
+    login: vi.fn().mockResolvedValue({ id: 'test-user', email: 'test@example.com' }),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(() => ({ id: 'test-user', email: 'test@example.com' })),
+    isAuthenticated: vi.fn(() => true)
+}));
+
 beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();

@@ -57,6 +57,14 @@ vi.mock('recharts', () => {
     };
 });
 
+// Mock auth service - ensure tests run with authenticated user
+vi.mock('../../../services/authService', () => ({
+    login: vi.fn().mockResolvedValue({ id: 'test-user', email: 'test@example.com' }),
+    logout: vi.fn(),
+    getCurrentUser: vi.fn(() => ({ id: 'test-user', email: 'test@example.com' })),
+    isAuthenticated: vi.fn(() => true)
+}));
+
 describe('App Layout & Responsiveness', () => {
     beforeEach(() => {
         vi.clearAllMocks();

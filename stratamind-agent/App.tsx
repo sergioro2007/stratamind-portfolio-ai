@@ -89,34 +89,19 @@ function App() {
     // STATE: Authentication
     // -------------------------------------------------------------------------
     const [isLoggedIn, setIsLoggedIn] = useState(isAuthenticated());
-    const currentUser = getCurrentUser();
+    const [currentUser, setCurrentUser] = useState(getCurrentUser());
 
-    // Check authentication on mount
+    // Update currentUser when login state changes
     useEffect(() => {
-        setIsLoggedIn(isAuthenticated());
-    }, []);
-
-    const handleLogin = () => {
-        setIsLoggedIn(true);
-    };
-
-    const handleLogout = () => {
-        logout();
-        setIsLoggedIn(false);
-        // Clear portfolio data
-        setInstitutions([]);
-        setActiveInstitutionId(null);
-        setActiveAccountId(null);
-        setSelectedStrategyId(null);
-    };
-
-    // Show login page if not authenticated
-    if (!isLoggedIn) {
-        return <LoginPage onLoginSuccess={handleLogin} />;
-    }
+        if (isLoggedIn) {
+            setCurrentUser(getCurrentUser());
+        } else {
+            setCurrentUser(null);
+        }
+    }, [isLoggedIn]);
 
     // -------------------------------------------------------------------------
-    // STATE: Data Model
+    // STATE: Data Model - MUST be declared before conditional return!
     // -------------------------------------------------------------------------
     const [institutions, setInstitutions] = useState<Institution[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -183,7 +168,7 @@ function App() {
     }, []);
 
     // -------------------------------------------------------------------------
-    // INIT & EFFECT
+    // INIT & EFFECT - Must be before conditional return!
     // -------------------------------------------------------------------------
     useEffect(() => {
         const initData = async () => {
@@ -344,6 +329,28 @@ function App() {
         }
     }, [activeAccount, selectedStrategyId]);
 
+
+    // -------------------------------------------------------------------------
+    // ACTIONS: Authentication
+    // -------------------------------------------------------------------------
+    const handleLogin = () => {
+        setIsLoggedIn(true);
+    };
+
+    const handleLogout = () => {
+        logout();
+        setIsLoggedIn(false);
+        // Clear portfolio data
+        setInstitutions([]);
+        setActiveInstitutionId(null);
+        setActiveAccountId(null);
+        setSelectedStrategyId(null);
+    };
+
+    // Show login page if not authenticated - AFTER all hooks!
+    if (!isLoggedIn) {
+        return <LoginPage onLoginSuccess={handleLogin} />;
+    }
 
     // -------------------------------------------------------------------------
     // ACTIONS: Portfolio Management
