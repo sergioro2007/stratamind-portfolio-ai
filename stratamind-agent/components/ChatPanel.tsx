@@ -19,7 +19,7 @@ const ChatPanel: React.FC<Props> = ({
     onRejectProposal,
     isTyping
 }) => {
-    const inputRef = useRef<HTMLInputElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
@@ -28,11 +28,26 @@ const ChatPanel: React.FC<Props> = ({
         }
     }, [messages, pendingProposal, isTyping]);
 
+    const adjustHeight = () => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto'; // Reset to recalculate
+            textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 200)}px`; // Max height 200px
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+        }
+    };
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        if (inputRef.current && inputRef.current.value.trim()) {
-            onSendMessage(inputRef.current.value);
-            inputRef.current.value = '';
+        if (textareaRef.current && textareaRef.current.value.trim()) {
+            onSendMessage(textareaRef.current.value);
+            textareaRef.current.value = '';
+            adjustHeight(); // Reset height
         }
     };
 
@@ -67,8 +82,8 @@ const ChatPanel: React.FC<Props> = ({
 
                             {/* Bubble */}
                             <div className={`p-3 rounded-2xl text-sm leading-relaxed ${msg.sender === Sender.USER
-                                    ? 'bg-slate-700 text-slate-100 rounded-tr-none'
-                                    : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
+                                ? 'bg-slate-700 text-slate-100 rounded-tr-none'
+                                : 'bg-slate-800 text-slate-200 border border-slate-700 rounded-tl-none'
                                 }`}>
                                 {msg.text}
                                 {msg.toolName && (
@@ -130,20 +145,22 @@ const ChatPanel: React.FC<Props> = ({
 
             {/* Input Area */}
             <div className="p-4 bg-slate-900">
-                <form onSubmit={handleSubmit} className="relative">
-                    <input
-                        ref={inputRef}
-                        type="text"
+                <form onSubmit={handleSubmit} className="relative flex items-end">
+                    <textarea
+                        ref={textareaRef}
                         data-testid="chat-input"
                         placeholder="Ask StrataMind to build a portfolio..."
-                        className="w-full bg-slate-800 text-white placeholder-slate-500 rounded-xl py-3 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-700"
+                        className="w-full bg-slate-800 text-white placeholder-slate-500 rounded-xl py-3 pl-4 pr-12 focus:outline-none focus:ring-2 focus:ring-indigo-500 border border-slate-700 resize-none min-h-[46px] max-h-[200px]"
                         disabled={!!pendingProposal || isTyping}
+                        rows={1}
+                        onKeyDown={handleKeyDown}
+                        onChange={adjustHeight}
                     />
                     <button
                         type="submit"
                         data-testid="send-button"
                         disabled={!!pendingProposal || isTyping}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="absolute right-2 bottom-2 p-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
                         <Send className="w-4 h-4" />
                     </button>

@@ -145,38 +145,56 @@ describe('ChatPanel', () => {
     });
 
     describe('Message Sending', () => {
-        it('should call onSendMessage when user submits a message', async () => {
+        it('should call onSendMessage when user presses Enter (without Shift)', async () => {
             const user = userEvent.setup();
             render(<ChatPanel {...defaultProps} />);
 
-            const input = screen.getByPlaceholderText(/Ask StrataMind to build a portfolio/i);
-            await user.type(input, 'Create a tech portfolio');
-
-            const form = input.closest('form');
-            fireEvent.submit(form!);
+            const input = screen.getByRole('textbox');
+            await user.type(input, 'Create a tech portfolio{Enter}');
 
             expect(mockOnSendMessage).toHaveBeenCalledWith('Create a tech portfolio');
+        });
+
+        it('should NOT submit when user presses Shift+Enter', async () => {
+            const user = userEvent.setup();
+            render(<ChatPanel {...defaultProps} />);
+
+            const input = screen.getByRole('textbox');
+            await user.type(input, 'Line 1{Shift>}{Enter}{/Shift}Line 2');
+
+            expect(mockOnSendMessage).not.toHaveBeenCalled();
+            expect(input).toHaveValue('Line 1\nLine 2');
+        });
+
+        it('should call onSendMessage when send button is clicked', async () => {
+            const user = userEvent.setup();
+            render(<ChatPanel {...defaultProps} />);
+
+            const input = screen.getByRole('textbox');
+            await user.type(input, 'Click send');
+
+            const sendButton = screen.getByTestId('send-button');
+            await user.click(sendButton);
+
+            expect(mockOnSendMessage).toHaveBeenCalledWith('Click send');
         });
 
         it('should clear input after sending message', async () => {
             const user = userEvent.setup();
             render(<ChatPanel {...defaultProps} />);
 
-            const input = screen.getByPlaceholderText(/Ask StrataMind to build a portfolio/i) as HTMLInputElement;
-            await user.type(input, 'Test message');
-
-            const form = input.closest('form');
-            fireEvent.submit(form!);
+            const input = screen.getByRole('textbox') as HTMLTextAreaElement;
+            await user.type(input, 'Test message{Enter}');
 
             expect(input.value).toBe('');
         });
 
         it('should not send empty messages', async () => {
+            const user = userEvent.setup();
             render(<ChatPanel {...defaultProps} />);
 
-            const input = screen.getByPlaceholderText(/Ask StrataMind to build a portfolio/i);
-            const form = input.closest('form');
-            fireEvent.submit(form!);
+            const input = screen.getByRole('textbox');
+            await user.type(input, '{Enter}');
 
             expect(mockOnSendMessage).not.toHaveBeenCalled();
         });
@@ -185,27 +203,10 @@ describe('ChatPanel', () => {
             const user = userEvent.setup();
             render(<ChatPanel {...defaultProps} />);
 
-            const input = screen.getByPlaceholderText(/Ask StrataMind to build a portfolio/i);
-            await user.type(input, '   ');
-
-            const form = input.closest('form');
-            fireEvent.submit(form!);
+            const input = screen.getByRole('textbox');
+            await user.type(input, '   {Enter}');
 
             expect(mockOnSendMessage).not.toHaveBeenCalled();
-        });
-
-        it('should send messages with whitespace (trim only for validation)', async () => {
-            const user = userEvent.setup();
-            render(<ChatPanel {...defaultProps} />);
-
-            const input = screen.getByPlaceholderText(/Ask StrataMind to build a portfolio/i);
-            await user.type(input, '  Test message  ');
-
-            const form = input.closest('form');
-            fireEvent.submit(form!);
-
-            // Component validates with trim() but sends original value
-            expect(mockOnSendMessage).toHaveBeenCalledWith('  Test message  ');
         });
     });
 
