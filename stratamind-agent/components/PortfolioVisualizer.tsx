@@ -217,7 +217,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
                 <div className="bg-slate-800 border border-slate-700 p-2 rounded shadow-xl text-xs">
                     <p className="font-bold text-slate-200">{data.name}</p>
                     <p className="text-slate-400">Target: {data.value}%</p>
-                    <p className="text-emerald-400">Est. Value: ${((totalValue * (data.value / 100))).toLocaleString()}</p>
+                    <p className="text-emerald-400">Est. Value: ${((totalValue * (data.value / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
                 </div>
             );
         }
@@ -438,7 +438,7 @@ const PortfolioVisualizer: React.FC<Props> = ({
                                         <p className="text-sm font-bold text-white">{item.value}%</p>
                                         <p className="text-xs text-emerald-400 flex items-center justify-end">
                                             <DollarSign className="w-3 h-3" />
-                                            {((totalValue * (item.value / 100))).toLocaleString()}
+                                            {((totalValue * (item.value / 100))).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </p>
                                         {/* Real-time price display */}
                                         {showPrices && item.raw.type === SliceType.HOLDING && item.raw.symbol && effectivePrices.has(item.raw.symbol) && (

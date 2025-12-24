@@ -1462,7 +1462,18 @@ function App() {
                                 <div className="h-full">
                                     {performanceStats && (
                                         <PerformanceStatsDisplay
-                                            stats={performanceStats}
+                                            stats={activeStrategy ? {
+                                                // Prorate stats to show portfolio-specific values (not full account)
+                                                current: performanceStats.current * (activeStrategy.targetAllocation / 100),
+                                                dayChange: performanceStats.dayChange * (activeStrategy.targetAllocation / 100),
+                                                dayChangePercent: performanceStats.dayChangePercent,
+                                                weekChange: performanceStats.weekChange * (activeStrategy.targetAllocation / 100),
+                                                weekChangePercent: performanceStats.weekChangePercent,
+                                                monthChange: performanceStats.monthChange * (activeStrategy.targetAllocation / 100),
+                                                monthChangePercent: performanceStats.monthChangePercent,
+                                                allTimeHigh: performanceStats.allTimeHigh * (activeStrategy.targetAllocation / 100),
+                                                allTimeLow: performanceStats.allTimeLow * (activeStrategy.targetAllocation / 100)
+                                            } : performanceStats}
                                             statsLoading={isPerformanceLoading}
                                         />
                                     )}
