@@ -14,7 +14,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
     const [name, setName] = useState(account.name);
     const [totalValue, setTotalValue] = useState(account.totalValue.toString());
     const [cashBalance, setCashBalance] = useState(account.cashBalance.toString());
-    const [margin, setMargin] = useState(account.margin.toString());
+    const [margin, setMargin] = useState((account.margin ?? 0).toString()); // Default to 0 if undefined
     const [strategies, setStrategies] = useState<PortfolioSlice[]>(JSON.parse(JSON.stringify(account.strategies)));
 
     // Validation Calculation
@@ -47,7 +47,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
             name: name,
             totalValue: parseFloat(totalValue),
             cashBalance: parseFloat(cashBalance),
-            margin: parseFloat(margin),
+            margin: parseFloat(margin) || 0,  // Ensure we save margin with fallback to 0
             strategies: strategies
         };
         onSave(updatedAccount);
@@ -186,8 +186,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
                     </button>
                     <button
                         onClick={handleSave}
-                        disabled={!isValid || !isValueValid || !isCashValid}
-                        className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${isValid && isValueValid && isCashValid
+                        disabled={!isValid || !isValueValid || !isCashValid || !isMarginValid}
+                        className={`px-6 py-2 text-sm font-medium rounded-lg transition-all ${isValid && isValueValid && isCashValid && isMarginValid
                             ? 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/25'
                             : 'bg-slate-800 text-slate-500 cursor-not-allowed'
                             }`}
