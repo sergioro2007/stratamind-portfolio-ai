@@ -182,6 +182,8 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
     const { name, type, totalValue, cashBalance, margin, strategies } = req.body;
 
+    console.log('📝 PUT /api/accounts - Request body:', { name, type, totalValue, cashBalance, margin, strategies: strategies?.length });
+
     // 1. Update Account Metadata
     const updateSql = `UPDATE accounts SET name = ?, type = ?, total_value = ?, cash_balance = ?, margin = ? WHERE id = ?`;
 
@@ -193,6 +195,7 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
             }
 
             db.run(updateSql, [name, type, totalValue, cashBalance, margin, id], (err) => {
+                console.log('💾 Saving to DB:', { name, type, totalValue, cashBalance, margin, id });
                 if (err) {
                     console.error("Error updating account meta", err);
                     db.run('ROLLBACK');
