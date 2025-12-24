@@ -84,6 +84,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
                                 <input
                                     id="total-value"
                                     type="number"
+                                    step="0.01"
+                                    min="0"
                                     value={totalValue}
                                     onChange={e => setTotalValue(e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
@@ -94,6 +96,8 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
                                 <input
                                     id="cash-balance"
                                     type="number"
+                                    step="0.01"
+                                    min="0"
                                     value={cashBalance}
                                     onChange={e => setCashBalance(e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
