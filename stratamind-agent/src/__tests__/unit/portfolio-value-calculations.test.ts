@@ -5,9 +5,10 @@ import { SliceType, type Account, type PortfolioSlice } from '../../../types';
  * Portfolio Value Calculation Tests
  * 
  * These tests verify that portfolio values are always calculated correctly:
- * 1. Portfolio totalValue = (account.totalValue - cashBalance) * (allocation / 100)
- * 2. Performance stats are prorated based on portfolio allocation
- * 3. Cash allocation is prorated correctly for portfolios
+ * 1. Portfolio investing power = (account.totalValue + margin - cashBalance)
+ * 2. Portfolio totalValue = investing power * (allocation / 100)
+ * 3. Performance stats are prorated based on portfolio allocation
+ * 4. Cash allocation is prorated correctly for portfolios
  */
 
 describe('Portfolio Value Calculations', () => {
@@ -282,6 +283,102 @@ describe('Portfolio Value Calculations', () => {
 
             // Sum should be very close to investing power (allowing for rounding)
             expect(portfolioA + portfolioB).toBeCloseTo(investingPower, 0);
+        });
+    });
+
+    describe('Holdings Calculation with Margin', () => {
+        it('should calculate holdings without margin (backward compatibility)', () => {
+            const account: Account = {
+                id: 'acc-1',
+                name: 'No Margin Account',
+                type: 'Brokerage',
+                totalValue: 10000,
+                cashBalance: 1000,
+                margin: 0,
+                strategies: []
+            };
+
+            // Formula: holdings = totalValue + margin - cash
+            const holdings = account.totalValue + (account.margin || 0) - account.cashBalance;
+            expect(holdings).toBe(9000); // 10,000 + 0 - 1,000 = 9,000
+        });
+
+        it('should calculate holdings with margin (user example)', () => {
+            const account: Account = {
+                id: 'acc-1',
+                name: 'Margin Account',
+                type: 'Brokerage',
+                totalValue: 19000,
+                cashBalance: 2000,
+                margin: 12000,
+                strategies: []
+            };
+
+            // Formula: holdings = totalValue + margin - cash
+            const holdings = account.totalValue + (account.margin || 0) - account.cashBalance;
+            expect(holdings).toBe(29000); // 19,000 + 12,000 - 2,000 = 29,000
+        });
+
+        it('should calculate holdings with margin and zero cash', () => {
+            const account: Account = {
+                id: 'acc-1',
+                name: 'Fully Invested',
+                type: 'Brokerage',
+                totalValue: 19000,
+                cashBalance: 0,
+                margin: 12000,
+                strategies: []
+            };
+
+            // Formula: holdings = totalValue + margin - cash
+            const holdings = account.totalValue + (account.margin || 0) - account.cashBalance;
+            expect(holdings).toBe(31000); // 19,000 + 12,000 - 0 = 31,000
+        });
+
+        it('should handle undefined margin gracefully', () => {
+            const account: Account = {
+                id: 'acc-1',
+                name: 'Legacy Account',
+                type: 'Brokerage',
+                totalValue: 50000,
+                cashBalance: 5000,
+                margin: undefined as any, // Simulating old account without margin field
+                strategies: []
+            };
+
+            // Formula should handle undefined margin by treating it as 0
+            const holdings = account.totalValue + (account.margin || 0) - account.cashBalance;
+            expect(holdings).toBe(45000); // 50,000 + 0 - 5,000 = 45,000
+        });
+
+        it('should calculate portfolio allocation with margin included', () => {
+            const account: Account = {
+                id: 'acc-1',
+                name: 'Leveraged Portfolio',
+                type: 'Brokerage',
+                totalValue: 100000,
+                cashBalance: 10000,
+                margin: 50000, // Using margin to increase buying power
+                strategies: [
+                    {
+                        id: 'strat-1',
+                        parentId: null,
+                        type: SliceType.GROUP,
+                        name: 'Aggressive Growth',
+                        targetAllocation: 100,
+                        currentValue: 0,
+                        children: []
+                    }
+                ]
+            };
+
+            // Investing power with margin = totalValue + margin - cash
+            const investingPower = account.totalValue + (account.margin || 0) - account.cashBalance;
+            expect(investingPower).toBe(140000); // 100,000 + 50,000 - 10,000 = 140,000
+
+            // Portfolio value with 100% allocation
+            const portfolioValue = investingPower * (account.strategies[0].targetAllocation / 100);
+            expect(portfolioValue).toBe(140000); // All investing power allocated
         });
     });
 });

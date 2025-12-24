@@ -131,7 +131,7 @@ function App() {
                                     timestamp: now,
                                     totalValue: firstAcc.totalValue,
                                     cashBalance: firstAcc.cashBalance,
-                                    holdingsValue: firstAcc.totalValue - firstAcc.cashBalance,
+                                    holdingsValue: firstAcc.totalValue + (firstAcc.margin || 0) - firstAcc.cashBalance,
                                     dayChange: 0,
                                     dayChangePercent: 0
                                 });
@@ -879,7 +879,7 @@ function App() {
                         timestamp: Date.now(),
                         totalValue: updatedAcc.totalValue,
                         cashBalance: updatedAcc.cashBalance,
-                        holdingsValue: updatedAcc.totalValue - updatedAcc.cashBalance,
+                        holdingsValue: updatedAcc.totalValue + (updatedAcc.margin || 0) - updatedAcc.cashBalance,
                         dayChange: 0,
                         dayChangePercent: 0
                     });
