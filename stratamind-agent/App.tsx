@@ -1526,7 +1526,7 @@ function App() {
                                 {activeStrategy ? (
                                     <PortfolioVisualizer
                                         rootSlice={activeStrategy}
-                                        totalValue={(activeAccount.totalValue - activeAccount.cashBalance) * (activeStrategy.targetAllocation / 100)} // Prorated Investing Power
+                                        totalValue={(activeAccount.totalValue + (activeAccount.margin || 0) - activeAccount.cashBalance) * (activeStrategy.targetAllocation / 100)} // Prorated Investing Power (including margin)
                                         onAddSlice={handleAddSliceWithRebalance}
                                         onUpdate={(updated) => { /* Handle deep updates via PortfolioVisualizer internal state or bubble up */ }}
                                         onRenameSlice={handleRenameSlice}
