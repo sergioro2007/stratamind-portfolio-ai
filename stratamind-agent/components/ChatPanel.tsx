@@ -20,10 +20,15 @@ const ChatPanel: React.FC<Props> = ({
     isTyping
 }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const scrollRef = useRef<HTMLDivElement>(null);
 
     const scrollToBottom = () => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (scrollRef.current) {
+            scrollRef.current.scrollTo({
+                top: scrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
     };
 
     useEffect(() => {
@@ -69,7 +74,7 @@ const ChatPanel: React.FC<Props> = ({
             </div>
 
             {/* Messages Area */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
+            <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-6 scrollbar-hide">
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
@@ -144,8 +149,6 @@ const ChatPanel: React.FC<Props> = ({
                     </div>
                 )}
 
-                {/* Scroll Anchor */}
-                <div ref={messagesEndRef} />
             </div>
 
             {/* Input Area */}

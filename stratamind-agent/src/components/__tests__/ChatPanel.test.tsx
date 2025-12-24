@@ -20,6 +20,8 @@ describe('ChatPanel', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+        // Mock scrollTo for JSDOM
+        Element.prototype.scrollTo = vi.fn();
     });
 
     describe('Rendering', () => {
