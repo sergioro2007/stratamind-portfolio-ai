@@ -1561,7 +1561,7 @@ function App() {
                                     <X className="w-5 h-5" />
                                 </button>
                             </div>
-                            <div className="h-full xl:h-auto flex-1 flex flex-col">
+                            <div className="h-full flex-1 flex flex-col">
                                 <ChatPanel
                                     messages={chatMessages}
                                     onSendMessage={handleSendMessage}
