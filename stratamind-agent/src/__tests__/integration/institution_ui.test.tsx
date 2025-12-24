@@ -24,7 +24,8 @@ describe('Institution UI Integration', () => {
                     type: 'Checking',
                     strategies: [],
                     totalValue: 1000,
-                    cashBalance: 1000
+                    cashBalance: 1000,
+                    margin: 0
                 }
             ]
         }
@@ -95,7 +96,8 @@ describe('Institution UI Integration', () => {
                     type: 'Brokerage',
                     strategies: [],
                     totalValue: 0,
-                    cashBalance: 0
+                    cashBalance: 0,
+                    margin: 0
                 }
             ]
         }];

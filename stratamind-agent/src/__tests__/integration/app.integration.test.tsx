@@ -67,6 +67,7 @@ vi.mock('../../../services/database', () => {
                                 type,
                                 totalValue: 0,
                                 cashBalance: 0,
+                    margin: 0,
                                 strategies: []
                             }]
                         };
@@ -174,6 +175,7 @@ const seedTestData = () => {
             type: 'Brokerage',
             totalValue: 10000,
             cashBalance: 1000,
+                    margin: 0,
             strategies: [{
                 id: 'test-strat-1',
                 parentId: null,
@@ -320,6 +322,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 0,
+                    margin: 0,
                     strategies: [
                         { id: 'strat-1', name: 'Strategy 1', targetAllocation: 50, type: SliceType.GROUP, children: [], currentValue: 0, parentId: null },
                         { id: 'strat-2', name: 'Strategy 2', targetAllocation: 50, type: SliceType.GROUP, children: [], currentValue: 0, parentId: null }
@@ -381,6 +384,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 0,
+                    margin: 0,
                     strategies: [{
                         id: 'strat-1',
                         name: 'Strategy 1',
@@ -541,6 +545,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 10000,
+                    margin: 0,
                     strategies: [{
                         id: 'root-1',
                         type: 'GROUP',
@@ -622,6 +627,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 10000,
+                    margin: 0,
                     strategies: [{
                         id: 'root-1',
                         type: 'GROUP',
@@ -749,6 +755,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 10000,
+                    margin: 0,
                     strategies: [{
                         id: 'root-1',
                         type: 'GROUP',
@@ -933,6 +940,7 @@ describe('Integration Tests - Complete User Workflows', () => {
                             type: 'Taxable',
                             totalValue: 10000,
                             cashBalance: 1000,
+                    margin: 0,
                             strategies: [{
                                 id: 'root-1',
                                 parentId: null,

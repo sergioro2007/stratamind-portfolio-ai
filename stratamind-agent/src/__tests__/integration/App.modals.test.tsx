@@ -57,6 +57,7 @@ vi.mock('../../../services/database', () => {
                                 type,
                                 totalValue: 0,
                                 cashBalance: 0,
+                        margin: 0,
                                 strategies: []
                             }]
                         };
@@ -151,6 +152,7 @@ describe('App Integration - Modal Coverage', () => {
                     type: 'Brokerage',
                     totalValue: 10000,
                     cashBalance: 10000,
+                        margin: 0,
                     strategies: []
                 }]
             }

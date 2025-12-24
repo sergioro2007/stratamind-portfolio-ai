@@ -19,6 +19,7 @@ describe('Portfolio Value Calculations', () => {
                 type: 'Brokerage',
                 totalValue: 100000,
                 cashBalance: 10000,
+                margin: 0,
                 strategies: [
                     {
                         id: 'strat-1',
@@ -45,6 +46,7 @@ describe('Portfolio Value Calculations', () => {
                 type: 'Brokerage',
                 totalValue: 50000,
                 cashBalance: 5000,
+                margin: 0,
                 strategies: [
                     {
                         id: 'strat-1',
@@ -71,6 +73,7 @@ describe('Portfolio Value Calculations', () => {
                 type: 'Brokerage',
                 totalValue: 200000,
                 cashBalance: 20000,
+                margin: 0,
                 strategies: [
                     {
                         id: 'strat-1',
@@ -199,6 +202,7 @@ describe('Portfolio Value Calculations', () => {
                 type: 'Brokerage',
                 totalValue: 100000,
                 cashBalance: 10000,
+                margin: 0,
                 strategies: [
                     {
                         id: 'growth-port',
@@ -245,6 +249,7 @@ describe('Portfolio Value Calculations', () => {
                 type: 'Brokerage',
                 totalValue: 75000,
                 cashBalance: 5000,
+                margin: 0,
                 strategies: [
                     {
                         id: 'strat-1',

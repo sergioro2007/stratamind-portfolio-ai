@@ -23,6 +23,7 @@ export interface Account {
     type: string; // e.g. "Retirement", "Brokerage"
     totalValue: number;
     cashBalance: number;
+    margin: number; // Margin debt - reduces totalValue (formula: totalValue = holdings + cash - margin)
     strategies: PortfolioSlice[]; // List of strategies (Pies) available in this account
 }
 

@@ -14,6 +14,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
     const [name, setName] = useState(account.name);
     const [totalValue, setTotalValue] = useState(account.totalValue.toString());
     const [cashBalance, setCashBalance] = useState(account.cashBalance.toString());
+    const [margin, setMargin] = useState(account.margin.toString());
     const [strategies, setStrategies] = useState<PortfolioSlice[]>(JSON.parse(JSON.stringify(account.strategies)));
 
     // Validation Calculation
@@ -24,6 +25,7 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
     const isValid = strategies.length === 0 || totalAllocation === 100;
     const isValueValid = !isNaN(parseFloat(totalValue)) && parseFloat(totalValue) >= 0;
     const isCashValid = !isNaN(parseFloat(cashBalance)) && parseFloat(cashBalance) >= 0;
+    const isMarginValid = !isNaN(parseFloat(margin)) && parseFloat(margin) >= 0;
 
     const handleAllocationChange = (id: string, newVal: string) => {
         const num = parseInt(newVal) || 0;
@@ -38,13 +40,14 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
     };
 
     const handleSave = () => {
-        if (!isValid || !isValueValid || !isCashValid) return;
+        if (!isValid || !isValueValid || !isCashValid || !isMarginValid) return;
 
         const updatedAccount: Account = {
             ...account,
             name: name,
             totalValue: parseFloat(totalValue),
             cashBalance: parseFloat(cashBalance),
+            margin: parseFloat(margin),
             strategies: strategies
         };
         onSave(updatedAccount);
@@ -100,6 +103,18 @@ export const AccountSettingsModal: React.FC<AccountSettingsModalProps> = ({ acco
                                     min="0"
                                     value={cashBalance}
                                     onChange={e => setCashBalance(e.target.value)}
+                                    className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                />
+                            </div>
+                            <div>
+                                <label htmlFor="margin" className="block text-xs text-slate-500 mb-1">Margin / Debt ($)</label>
+                                <input
+                                    id="margin"
+                                    type="number"
+                                    step="0.01"
+                                    min="0"
+                                    value={margin}
+                                    onChange={e => setMargin(e.target.value)}
                                     className="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                 />
                             </div>
