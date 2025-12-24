@@ -1408,6 +1408,15 @@ function App() {
                                     <span className="text-slate-500">CASH:</span>
                                     <span className="text-emerald-400 font-bold">${activeAccount.cashBalance.toLocaleString()}</span>
                                 </div>
+                                {activeAccount.margin > 0 && (
+                                    <>
+                                        <div className="w-1 h-1 rounded-full bg-slate-700 shrink-0" />
+                                        <div className="flex items-center gap-1.5 group shrink-0">
+                                            <span className="text-slate-500">MARGIN:</span>
+                                            <span className="text-amber-400 font-bold">${activeAccount.margin.toLocaleString()}</span>
+                                        </div>
+                                    </>
+                                )}
                             </div>
                         )}
                     </div>
