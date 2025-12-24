@@ -54,7 +54,7 @@ export interface Message {
 
 export interface AIProposal {
     id: string;
-    type: 'ADD_SLICE' | 'REMOVE_SLICE' | 'REBALANCE' | 'CREATE_PORTFOLIO' | 'ADD_TICKER' | 'REMOVE_TICKER';
+    type: 'ADD_SLICE' | 'REMOVE_SLICE' | 'REBALANCE' | 'CREATE_PORTFOLIO' | 'ADD_TICKER' | 'REMOVE_TICKER' | 'BATCH_ADD_TICKERS';
     toolName: string;
     description: string;
     details: any; // Context specific payload

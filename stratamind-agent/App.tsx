@@ -1009,6 +1009,18 @@ function App() {
                             status: 'PENDING'
                         };
                         setPendingProposal(proposal);
+                    } else if (call.name === 'add_multiple_tickers_to_group') {
+                        const { tickers, groupName, autoRebalance } = call.args;
+                        const proposal: AIProposal = {
+                            id: generateId(),
+                            type: 'BATCH_ADD_TICKERS',
+                            toolName: 'add_multiple_tickers_to_group',
+                            description: `Add ${tickers.length} tickers: ${tickers.map((t: any) => t.symbol).join(', ')}`,
+                            details: { tickers, groupName, autoRebalance },
+                            rawPrompt: text,
+                            status: 'PENDING'
+                        };
+                        setPendingProposal(proposal);
                     }
                 }
             }
@@ -1051,8 +1063,99 @@ function App() {
                 const { groupName } = proposal.details;
                 handleRebalancePortfolio(groupName);
             }
+        } else if (proposal.type === 'BATCH_ADD_TICKERS') {
+            const { tickers, groupName, autoRebalance } = proposal.details;
+            handleAddBatchTickersToStructure(tickers, groupName, autoRebalance !== false);
         }
         setPendingProposal(null);
+    };
+
+    const handleAddBatchTickersToStructure = async (tickers: { symbol: string, allocation: number }[], groupName?: string, autoRebalance: boolean = true) => {
+        if (!activeAccount || !activeStrategy) return;
+
+        // Clone current strategies
+        const strategies = JSON.parse(JSON.stringify(activeAccount.strategies));
+
+        // Find target group
+        let targetId = activeStrategy.id;
+        if (groupName) {
+            const findGroupId = (slices: PortfolioSlice[]): string | null => {
+                for (const s of slices) {
+                    if (s.name.toLowerCase().includes(groupName.toLowerCase()) && s.type === SliceType.GROUP) {
+                        return s.id;
+                    }
+                    if (s.children) {
+                        const found = findGroupId(s.children);
+                        if (found) return found;
+                    }
+                }
+                return null;
+            };
+            const foundId = findGroupId(strategies);
+            if (foundId) targetId = foundId;
+        }
+
+        // Apply all additions to the structure
+        const applyAdditions = (slices: PortfolioSlice[]): PortfolioSlice[] => {
+            return slices.map(s => {
+                if (s.id === targetId) {
+                    const currentChildren = s.children || [];
+
+                    // Filter out tickers that already exist to prevent duplicates
+                    const validTickers = tickers.filter(t => !currentChildren.some(c => c.symbol === t.symbol));
+
+                    if (validTickers.length === 0) return s;
+
+                    // Calculate total allocation needed for new tickers
+                    const totalNewAllocation = validTickers.reduce((sum, t) => sum + t.allocation, 0);
+
+                    // Rebalance existing if needed
+                    let updatedChildren = [...currentChildren];
+                    if (autoRebalance && updatedChildren.length > 0) {
+                        const remainingAllocation = Math.max(0, 100 - totalNewAllocation);
+                        // Scale down existing holdings relative to the remaining space
+                        // If current total is 100, we multiply each by (remaining / 100)
+                        updatedChildren = updatedChildren.map(child => ({
+                            ...child,
+                            targetAllocation: Math.floor(child.targetAllocation * (remainingAllocation / 100))
+                        }));
+
+                        // Distribute remainder types due to floor rounding
+                        const currentTotal = updatedChildren.reduce((sum, c) => sum + c.targetAllocation, 0);
+                        let gap = remainingAllocation - currentTotal;
+                        if (gap > 0 && updatedChildren.length > 0) {
+                            updatedChildren[0].targetAllocation += gap;
+                        }
+                    }
+
+                    // Create new slices
+                    const newSlices: PortfolioSlice[] = validTickers.map(t => ({
+                        id: generateId(), // simple generateId
+                        parentId: s.id,
+                        type: SliceType.HOLDING,
+                        name: t.symbol,
+                        symbol: t.symbol,
+                        targetAllocation: t.allocation,
+                        currentValue: 0,
+                        strategyPrompt: `Added via batch: ${t.symbol}`
+                    }));
+
+                    return { ...s, children: [...updatedChildren, ...newSlices] };
+                }
+                if (s.children) return { ...s, children: applyAdditions(s.children) };
+                return s;
+            });
+        };
+
+        const updatedStrategies = applyAdditions(strategies);
+        await updateActiveAccount({ strategies: updatedStrategies });
+
+        setChatMessages(prev => [...prev, {
+            id: Date.now().toString(),
+            text: `Added ${tickers.length} tickers to ${groupName || 'portfolio'} and rebalanced.`,
+            sender: Sender.AI,
+            timestamp: Date.now()
+        }]);
     };
 
     const handleRejectProposal = (proposal: AIProposal) => {

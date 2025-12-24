@@ -147,7 +147,32 @@ const updateAllocationTool: FunctionDeclaration = {
     }
 };
 
-const tools = [createPortfolioTool, addTickerTool, removeTickerTool, rebalanceTool, updateAllocationTool, marketAnalysisTool];
+const batchAddTickerTool: FunctionDeclaration = {
+    name: 'add_multiple_tickers_to_group',
+    description: 'Add MULTIPLE stock tickers to a specific group or the root of the selected account in one batch. Use this when the user lists multiple stocks to add (e.g., "Add AAPL, MSFT, and GOOGL").',
+    parameters: {
+        type: Type.OBJECT,
+        properties: {
+            groupName: { type: Type.STRING, description: 'Name of the group to add these tickers to (fuzzy match). Optional.' },
+            tickers: {
+                type: Type.ARRAY,
+                description: 'List of tickers and their allocations',
+                items: {
+                    type: Type.OBJECT,
+                    properties: {
+                        symbol: { type: Type.STRING, description: 'Stock symbol (e.g., AAPL)' },
+                        allocation: { type: Type.NUMBER, description: 'Target allocation percentage. MUST be an integer.' }
+                    },
+                    required: ['symbol', 'allocation']
+                }
+            },
+            autoRebalance: { type: Type.BOOLEAN, description: 'If true, automatically rebalance existing holdings. Default: true' }
+        },
+        required: ['tickers']
+    }
+};
+
+const tools = [createPortfolioTool, addTickerTool, batchAddTickerTool, removeTickerTool, rebalanceTool, updateAllocationTool, marketAnalysisTool];
 
 const SYSTEM_INSTRUCTION = `
 You are StrataMind, an expert AI portfolio manager. 

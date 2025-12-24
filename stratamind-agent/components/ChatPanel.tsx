@@ -125,11 +125,32 @@ const ChatPanel: React.FC<Props> = ({
                             <p className="text-sm text-slate-200 mb-3">{pendingProposal.description}</p>
 
                             {/* Detailed breakdown based on type */}
-                            <div className="bg-black/20 rounded p-3 mb-4 text-xs font-mono text-slate-400">
-                                <pre className="whitespace-pre-wrap overflow-x-auto">
-                                    {JSON.stringify(pendingProposal.details, null, 2)}
-                                </pre>
-                            </div>
+                            {/* Detailed breakdown based on type */}
+                            {pendingProposal.type === 'BATCH_ADD_TICKERS' ? (
+                                <div className="bg-black/20 rounded-lg p-3 mb-4 space-y-2">
+                                    <div className="flex text-xs font-semibold text-slate-500 border-b border-slate-700/50 pb-1">
+                                        <span className="flex-1">Symbol</span>
+                                        <span>Alloc</span>
+                                    </div>
+                                    {pendingProposal.details.tickers.map((t: any, i: number) => (
+                                        <div key={i} className="flex text-sm text-slate-300">
+                                            <span className="flex-1 font-mono text-indigo-300">{t.symbol}</span>
+                                            <span className="font-mono">{t.allocation}%</span>
+                                        </div>
+                                    ))}
+                                    {pendingProposal.details.groupName && (
+                                        <div className="text-xs text-slate-500 pt-2 border-t border-slate-700/50 mt-2">
+                                            Target Group: {pendingProposal.details.groupName}
+                                        </div>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="bg-black/20 rounded p-3 mb-4 text-xs font-mono text-slate-400">
+                                    <pre className="whitespace-pre-wrap overflow-x-auto">
+                                        {JSON.stringify(pendingProposal.details, null, 2)}
+                                    </pre>
+                                </div>
+                            )}
 
                             <div className="flex gap-2">
                                 <button
