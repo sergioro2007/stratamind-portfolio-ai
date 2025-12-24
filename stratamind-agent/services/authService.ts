@@ -3,7 +3,7 @@ export interface User {
     email: string;
 }
 
-const API_BASE = 'http://localhost:3001';
+const API_BASE = '';
 const STORAGE_KEY = 'currentUser';
 
 /**

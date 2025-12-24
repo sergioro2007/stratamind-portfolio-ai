@@ -2,7 +2,7 @@ import { Institution, Account, SliceType, PortfolioSlice } from '../types';
 import { normalizeChildren } from '../utils/portfolioTree';
 import { getCurrentUser } from './authService';
 
-const API_BASE = 'http://localhost:3001/api';
+const API_BASE = '/api';
 
 // Helper to get auth headers
 const getAuthHeaders = () => {

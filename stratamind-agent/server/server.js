@@ -3,9 +3,14 @@ import cors from 'cors';
 import db from './db.js';
 import { v4 as uuidv4 } from 'uuid';
 import { loginUser, requireAuth, getCurrentUser } from './auth.js';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -301,6 +306,18 @@ server.on('error', (e) => {
 
 // Prevent process exit (debugging)
 setInterval(() => { }, 10000);
+
+// --- STATIC FILES (Production) ---
+// Serve static files from the React app build directory
+// Assuming server.js is in /server and dist is in /dist (root)
+const distPath = path.join(__dirname, '../dist');
+app.use(express.static(distPath));
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get(/.*/, (req, res) => {
+    res.sendFile(path.join(distPath, 'index.html'));
+});
 
 // === Performance Tracking Endpoints ===
 
