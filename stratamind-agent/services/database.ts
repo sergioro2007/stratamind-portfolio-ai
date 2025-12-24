@@ -26,6 +26,10 @@ export const generateId = (): string => {
     return 'id-' + Math.random().toString(36).substring(2, 9) + '-' + Date.now().toString(36);
 };
 
+// Request queue to prevent race conditions on concurrent saves
+// This ensures only ONE save operation is in flight at a time
+let saveQueue: Promise<any> = Promise.resolve();
+
 export const db = {
     load: async (): Promise<Institution[]> => {
         try {
@@ -110,30 +114,36 @@ export const db = {
     },
 
     updateAccountDetails: async (instId: string, accId: string, details: Partial<Account>): Promise<Institution[]> => {
-        // Load current state to merge, as backend expects full object for PUT (specifically for strategies)
-        // Or simply trust the backend handles partials? 
-        // My server.js PUT implementation expects { name, type, totalValue, cashBalance, strategies }
-        // It DOES NOT do a merge. It overwrites.
-        // So we MUST merge here or in the backend. 
-        // Let's merge here for safety since we have the full state loaded usually.
-        // BUT db.load() fetches fresh.
+        // Queue this save operation to prevent race conditions
+        // This ensures saves execute sequentially, not concurrently
+        saveQueue = saveQueue.then(async () => {
+            // Load current state to merge, as backend expects full object for PUT (specifically for strategies)
+            // Or simply trust the backend handles partials? 
+            // My server.js PUT implementation expects { name, type, totalValue, cashBalance, strategies }
+            // It DOES NOT do a merge. It overwrites.
+            // So we MUST merge here or in the backend. 
+            // Let's merge here for safety since we have the full state loaded usually.
+            // BUT db.load() fetches fresh.
 
-        // Better approach: Fetch specific account? No endpoint.
-        // Fetch all, find, merge.
-        const all = await db.load();
-        const inst = all.find(i => i.id === instId);
-        const acc = inst?.accounts.find(a => a.id === accId);
+            // Better approach: Fetch specific account? No endpoint.
+            // Fetch all, find, merge.
+            const all = await db.load();
+            const inst = all.find(i => i.id === instId);
+            const acc = inst?.accounts.find(a => a.id === accId);
 
-        if (acc) {
-            const merged = { ...acc, ...details };
-            const response = await fetch(`${API_BASE}/accounts/${accId}`, {
-                method: 'PUT',
-                headers: getAuthHeaders(),
-                body: JSON.stringify(merged)
-            });
-            await handleResponse(response);
-        }
-        return db.load();
+            if (acc) {
+                const merged = { ...acc, ...details };
+                const response = await fetch(`${API_BASE}/accounts/${accId}`, {
+                    method: 'PUT',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(merged)
+                });
+                await handleResponse(response);
+            }
+            return db.load();
+        });
+
+        return saveQueue;
     },
 
     deleteStrategy: async (instId: string, accId: string, strategyId: string): Promise<Institution[]> => {
