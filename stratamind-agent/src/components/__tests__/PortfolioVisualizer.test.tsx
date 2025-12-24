@@ -155,8 +155,8 @@ describe('PortfolioVisualizer', () => {
             render(<PortfolioVisualizer {...defaultProps} />);
 
             // 60% of 10000 = 6000, 40% = 4000
-            expect(screen.getByText('6,000')).toBeInTheDocument();
-            expect(screen.getByText('4,000')).toBeInTheDocument();
+            expect(screen.getByText('6,000.00')).toBeInTheDocument();
+            expect(screen.getByText('4,000.00')).toBeInTheDocument();
         });
 
         it('should display slice types', () => {
@@ -287,8 +287,8 @@ describe('PortfolioVisualizer', () => {
 
             render(<PortfolioVisualizer {...defaultProps} rootSlice={largeSlice} totalValue={1000000} />);
 
-            // Should format large numbers with commas
-            expect(screen.getByText('1,000,000')).toBeInTheDocument();
+            // Should format large numbers with commas and 2 decimal places
+            expect(screen.getByText('1,000,000.00')).toBeInTheDocument();
         });
 
         it('should reset path when root slice changes', () => {
