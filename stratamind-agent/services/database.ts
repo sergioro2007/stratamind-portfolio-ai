@@ -34,7 +34,8 @@ export const db = {
     load: async (): Promise<Institution[]> => {
         try {
             const response = await fetch(`${API_BASE}/portfolio`, {
-                headers: getAuthHeaders()
+                headers: getAuthHeaders(),
+                cache: 'no-store'
             });
             const data = await handleResponse(response);
             return data;
@@ -139,8 +140,25 @@ export const db = {
                     body: JSON.stringify(merged)
                 });
                 await handleResponse(response);
+
+                // Return optimistically updated institutions immediately
+                // instead of doing another db.load() which could return stale data
+                return all.map(i => {
+                    if (i.id === instId) {
+                        return {
+                            ...i,
+                            accounts: i.accounts.map(a => {
+                                if (a.id === accId) {
+                                    return merged;
+                                }
+                                return a;
+                            })
+                        };
+                    }
+                    return i;
+                });
             }
-            return db.load();
+            return all;
         });
 
         return saveQueue;
@@ -148,6 +166,7 @@ export const db = {
 
     deleteStrategy: async (instId: string, accId: string, strategyId: string): Promise<Institution[]> => {
         const all = await db.load();
+
         const inst = all.find(i => i.id === instId);
         const acc = inst?.accounts.find(a => a.id === accId);
 
@@ -159,8 +178,24 @@ export const db = {
                 headers: getAuthHeaders(),
                 body: JSON.stringify(merged)
             });
+
+            // Return optimistically updated institutions
+            return all.map(i => {
+                if (i.id === instId) {
+                    return {
+                        ...i,
+                        accounts: i.accounts.map(a => {
+                            if (a.id === accId) {
+                                return merged;
+                            }
+                            return a;
+                        })
+                    };
+                }
+                return i;
+            });
         }
-        return db.load();
+        return all;
     },
 
     // --- Performance Tracking Methods ---

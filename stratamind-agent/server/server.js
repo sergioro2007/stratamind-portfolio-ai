@@ -213,18 +213,26 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
                     // 3. Recursively Insert New Slices
                     const stmt = db.prepare(`INSERT INTO portfolio_slices (id, account_id, parent_id, type, name, symbol, target_allocation, current_value, strategy_prompt) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`);
 
+                    const insertPromises = [];
+
                     const insertSlice = (slice, parentId = null) => {
-                        stmt.run([
-                            slice.id,
-                            id,
-                            parentId,
-                            slice.type,
-                            slice.name,
-                            slice.symbol || null,
-                            slice.targetAllocation,
-                            slice.currentValue,
-                            slice.strategyPrompt || null
-                        ]);
+                        const p = new Promise((resolve, reject) => {
+                            stmt.run([
+                                slice.id,
+                                id,
+                                parentId,
+                                slice.type,
+                                slice.name,
+                                slice.symbol || null,
+                                slice.targetAllocation,
+                                slice.currentValue,
+                                slice.strategyPrompt || null
+                            ], (err) => {
+                                if (err) reject(err);
+                                else resolve();
+                            });
+                        });
+                        insertPromises.push(p);
 
                         if (slice.children && slice.children.length > 0) {
                             slice.children.forEach(child => insertSlice(child, slice.id));
@@ -233,17 +241,31 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
 
                     try {
                         if (strategies && strategies.length > 0) {
+                            console.log(`🔄 Processing ${strategies.length} root strategies for insertion...`);
                             strategies.forEach(s => insertSlice(s));
                         }
-                        stmt.finalize();
 
-                        db.run('COMMIT', () => {
-                            res.json({ success: true });
-                        });
-                    } catch (insertErr) {
-                        console.error("Error inserting slices", insertErr);
+                        // Wait for ALL inserts to finish logic before committing
+                        Promise.all(insertPromises)
+                            .then(() => {
+                                console.log(`✅ Successfully queued ${insertPromises.length} slices for insertion.`);
+                                stmt.finalize();
+                                db.run('COMMIT', () => {
+                                    console.log('🎉 Transaction COMMITTED.');
+                                    res.json({ success: true, count: insertPromises.length });
+                                });
+                            })
+                            .catch(insertErr => {
+                                console.error("❌ Error inserting slices (Promise Rejection):", insertErr);
+                                stmt.finalize(); // Cleanup
+                                db.run('ROLLBACK');
+                                res.status(500).json({ error: "Failed to insert strategies" });
+                            });
+
+                    } catch (syncErr) {
+                        console.error("❌ Synchronous Error during insert setup:", syncErr);
                         db.run('ROLLBACK');
-                        res.status(500).json({ error: "Failed to insert strategies" });
+                        res.status(500).json({ error: "Failed to process strategies" });
                     }
                 });
             });

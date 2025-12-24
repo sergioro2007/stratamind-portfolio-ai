@@ -191,22 +191,7 @@ describe('Database CRUD Operations', () => {
                 json: async () => ({ success: true })
             });
 
-            // Mock final load() call
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => [{
-                    id: 'inst-1',
-                    name: 'Test Inst',
-                    accounts: [{
-                        id: 'acc-1',
-                        name: 'New Name',
-                        type: 'Brokerage',
-                        totalValue: 10000,
-                        cashBalance: 1000,
-                        strategies: []
-                    }]
-                }]
-            });
+
 
             const result = await db.updateAccount('inst-1', 'acc-1', 'New Name');
 
@@ -242,22 +227,7 @@ describe('Database CRUD Operations', () => {
                 json: async () => ({ success: true })
             });
 
-            // Mock final load
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => [{
-                    id: 'inst-1',
-                    name: 'Test Inst',
-                    accounts: [{
-                        id: 'acc-1',
-                        name: 'Test Account',
-                        type: 'Brokerage',
-                        totalValue: 10000,
-                        cashBalance: 1000,
-                        strategies: [{ id: 'strat-2', name: 'Strategy 2' }]
-                    }]
-                }]
-            });
+
 
             const result = await db.deleteStrategy('inst-1', 'acc-1', 'strat-1');
 
@@ -279,16 +249,12 @@ describe('Database CRUD Operations', () => {
                 json: async () => []
             });
 
-            // Mock final load (no PUT should be called)
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => []
-            });
+
 
             const result = await db.deleteStrategy('invalid-inst', 'acc-1', 'strat-1');
 
-            // Should only have called fetch twice (initial load + final load, no PUT)
-            expect(mockFetch).toHaveBeenCalledTimes(2);
+            // Should only have called fetch once (initial load)
+            expect(mockFetch).toHaveBeenCalledTimes(1);
             expect(result).toEqual([]);
         });
 
@@ -303,20 +269,12 @@ describe('Database CRUD Operations', () => {
                 }]
             });
 
-            // Mock final load
-            mockFetch.mockResolvedValueOnce({
-                ok: true,
-                json: async () => [{
-                    id: 'inst-1',
-                    name: 'Test Inst',
-                    accounts: []
-                }]
-            });
+
 
             const result = await db.deleteStrategy('inst-1', 'invalid-acc', 'strat-1');
 
             // Should not have called PUT
-            expect(mockFetch).toHaveBeenCalledTimes(2);
+            expect(mockFetch).toHaveBeenCalledTimes(1);
             expect(result[0].accounts).toHaveLength(0);
         });
     });

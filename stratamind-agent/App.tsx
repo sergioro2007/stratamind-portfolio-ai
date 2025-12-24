@@ -866,8 +866,9 @@ function App() {
 
         try {
             const updated = await db.updateAccountDetails(activeInstitution.id, activeAccount.id, updates);
-            // Re-sync with server state (optional, but good for consistency/ID generation)
-            setInstitutions(updated);
+            // Re-sync with server state removed to prevent race conditions where stale server data 
+            // (from an earlier queued request) overwrites newer optimistic local state.
+            // setInstitutions(updated);
 
             // Record snapshot on significant updates (value/holdings change implicit in rebalance/add ticker)
             // In a real app, we'd check if value actually changed, but here we assume these actions warrant a snapshot
