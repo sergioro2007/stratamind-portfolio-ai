@@ -20,6 +20,7 @@ CREATE TABLE IF NOT EXISTS accounts (
   type TEXT NOT NULL,
   total_value REAL DEFAULT 0,
   cash_balance REAL DEFAULT 0,
+  margin REAL DEFAULT 0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY(institution_id) REFERENCES institutions(id) ON DELETE CASCADE
 );

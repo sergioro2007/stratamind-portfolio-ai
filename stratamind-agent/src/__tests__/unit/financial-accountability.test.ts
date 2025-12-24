@@ -110,6 +110,7 @@ describe('Financial Accountability - Account Level', () => {
         type: 'Brokerage',
         totalValue: 0,
         cashBalance: 0,
+        margin: 0,
         strategies: [],
         ...overrides
     });

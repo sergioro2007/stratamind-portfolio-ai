@@ -33,8 +33,8 @@ const seed = async () => {
 
                         // 2. Create Account
                         const accId = uuidv4();
-                        db.run(`INSERT INTO accounts (id, institution_id, name, type, total_value, cash_balance) VALUES (?, ?, ?, ?, ?, ?)`,
-                            [accId, instId, "Brokerage", "Brokerage", 150000, 10000], (err) => {
+                        db.run(`INSERT INTO accounts (id, institution_id, name, type, total_value, cash_balance, margin) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                            [accId, instId, "Brokerage", "Brokerage", 150000, 10000, 0], (err) => {
                                 if (err) {
                                     console.log("Account create error:", err.message);
                                     return;

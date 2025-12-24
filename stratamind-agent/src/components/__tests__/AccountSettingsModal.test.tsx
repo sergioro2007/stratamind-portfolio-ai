@@ -11,6 +11,7 @@ describe('AccountSettingsModal', () => {
         type: 'Brokerage',
         totalValue: 10000,
         cashBalance: 1000,
+                margin: 0,
         strategies: [
             {
                 id: 'strat-1',
@@ -121,6 +122,7 @@ describe('AccountSettingsModal', () => {
             name: 'New Account Name',
             totalValue: 10000,
             cashBalance: 1000,
+                margin: 0,
             strategies: mockAccount.strategies
         }));
     });
@@ -155,6 +157,7 @@ describe('AccountSettingsModal', () => {
             type: 'Brokerage',
             totalValue: 0,
             cashBalance: 0,
+                margin: 0,
             strategies: []
         };
 
@@ -202,6 +205,7 @@ describe('AccountSettingsModal', () => {
 
             expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
                 cashBalance: 2500,
+                margin: 0,
                 strategies: []
             }));
         });

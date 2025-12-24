@@ -134,6 +134,7 @@ describe('Financial Accountability - Integration', () => {
                         type: 'Brokerage',
                         totalValue: 10000,
                         cashBalance: 2000,
+                    margin: 0,
                         strategies: [
                             {
                                 id: 'strategy-1',
@@ -198,6 +199,7 @@ describe('Financial Accountability - Integration', () => {
                         type: 'Brokerage',
                         totalValue: 50000,
                         cashBalance: 0,
+                    margin: 0,
                         strategies: [
                             {
                                 id: 'strategy-1',
@@ -232,6 +234,7 @@ describe('Financial Accountability - Integration', () => {
                         type: 'Savings',
                         totalValue: 25000,
                         cashBalance: 25000,
+                    margin: 0,
                         strategies: []
                     }
                 ]
@@ -264,6 +267,7 @@ describe('Financial Accountability - Integration', () => {
                         type: 'Brokerage',
                         totalValue: 100000,
                         cashBalance: 10000,
+                    margin: 0,
                         strategies: [
                             {
                                 id: 'root',

@@ -40,6 +40,7 @@ describe('Database Service - Renaming', () => {
             type: 'Checking',
             totalValue: 1000,
             cashBalance: 0,
+            margin: 0,
             strategies: [{
               id: 'root-1',
               parentId: null,

@@ -46,6 +46,7 @@ vi.mock('../../../services/database', () => {
                                 type,
                                 totalValue: 10000,
                                 cashBalance: 10000,
+                            margin: 0,
                                 strategies: []
                             }]
                         };
@@ -240,6 +241,7 @@ describe('App Advanced Tests - Coverage Boosters', () => {
                         type: 'Brokerage',
                         totalValue: 10000,
                         cashBalance: 10000,
+                            margin: 0,
                         strategies: []
                     }]
                 }
@@ -272,6 +274,7 @@ describe('App Advanced Tests - Coverage Boosters', () => {
                         type: 'Brokerage',
                         totalValue: 10000,
                         cashBalance: 5000,
+                            margin: 0,
                         strategies: []
                     }]
                 }
@@ -378,6 +381,7 @@ describe('App Advanced Tests - Coverage Boosters', () => {
                         type: 'Brokerage',
                         totalValue: 10000,
                         cashBalance: 0,
+                            margin: 0,
                         strategies: [{
                             id: 'strat-1',
                             parentId: null,

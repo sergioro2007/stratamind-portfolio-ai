@@ -84,6 +84,7 @@ app.get('/api/portfolio', requireAuth, (req, res) => {
                         type: a.type,
                         totalValue: a.total_value || 0,
                         cashBalance: a.cash_balance || 0,
+                        margin: a.margin || 0,
                         created_at: a.created_at,
                         strategies: []
                     }));
@@ -158,8 +159,8 @@ app.post('/api/institutions', requireAuth, (req, res) => {
 app.post('/api/accounts', requireAuth, (req, res) => {
     const { institutionId, name, type } = req.body;
     const id = uuidv4();
-    const sql = `INSERT INTO accounts (id, institution_id, name, type, cash_balance) VALUES (?, ?, ?, ?, ?)`;
-    db.run(sql, [id, institutionId, name, type, 0], (err) => {
+    const sql = `INSERT INTO accounts (id, institution_id, name, type, cash_balance, margin) VALUES (?, ?, ?, ?, ?, ?)`;
+    db.run(sql, [id, institutionId, name, type, 0, 0], (err) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json({ id, name });
     });
@@ -179,10 +180,12 @@ app.put('/api/institutions/:id', requireAuth, (req, res) => {
 // Expects: { name, type, totalValue, cashBalance, strategies: [ ...tree... ] }
 app.put('/api/accounts/:id', requireAuth, (req, res) => {
     const { id } = req.params;
-    const { name, type, totalValue, cashBalance, strategies } = req.body;
+    const { name, type, totalValue, cashBalance, margin, strategies } = req.body;
+
+    console.log('📝 PUT /api/accounts - Request body:', { name, type, totalValue, cashBalance, margin, strategies: strategies?.length });
 
     // 1. Update Account Metadata
-    const updateSql = `UPDATE accounts SET name = ?, type = ?, total_value = ?, cash_balance = ? WHERE id = ?`;
+    const updateSql = `UPDATE accounts SET name = ?, type = ?, total_value = ?, cash_balance = ?, margin = ? WHERE id = ?`;
 
     db.serialize(() => {
         db.run('BEGIN TRANSACTION', (err) => {
@@ -191,7 +194,8 @@ app.put('/api/accounts/:id', requireAuth, (req, res) => {
                 return res.status(500).json({ error: "Transaction busy, please try again" });
             }
 
-            db.run(updateSql, [name, type, totalValue, cashBalance, id], (err) => {
+            db.run(updateSql, [name, type, totalValue, cashBalance, margin, id], (err) => {
+                console.log('💾 Saving to DB:', { name, type, totalValue, cashBalance, margin, id });
                 if (err) {
                     console.error("Error updating account meta", err);
                     db.run('ROLLBACK');
